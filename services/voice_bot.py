@@ -104,8 +104,6 @@ class VoiceBot:
             extend_commands.append(self.gen_general_command(command_name, order = order))
             contact_fields = None
             msg = None
-            if user_data.state == "wait_contact_fields":
-                print()
         else: 
             
             # required_fields = ["FirstName", "LastName", "Company", "BusinessEmail"]
@@ -115,7 +113,7 @@ class VoiceBot:
                 cmd_name = "updateCurrentContact"
                 print(11111111)
             else:
-                required_fields = payload["RequiredFields"]
+                required_fields = json.loads(payload)["RequiredFields"]
                 print(222222)
                 cmd_name = "createContact"
                 contact_fields = await self.extract_info_from_text(text, payload)
@@ -172,7 +170,7 @@ class VoiceBot:
             ]
         res = await self.openai_client.generate_response(messages)
         print("FIlled fields", res)
-        return res
+        return str(res).strip("'<>() ").replace('\'', '\"')
     
 
     async def extract_follow_ups(self, text: str):
@@ -182,11 +180,12 @@ class VoiceBot:
             ]
         res = await self.openai_client.generate_response(messages)
         print("Add follow ups", res)
-        res = json.loads(res)
+        res = json.loads(str(res).strip("'<>() ").replace('\'', '\"'))
         return res
     
 
     async def extract_list_interests(self, text: str, data: list):
+        print("Extracting interests")
         # processed_interests = [{"id": interest["_Id"], "name": interest["_Name"]} for interest in data]
         prompt = get_extract_interests_prompt(text, data)
         
@@ -194,8 +193,8 @@ class VoiceBot:
                 {"role": "user", "content": prompt}
             ]
         res = await self.openai_client.generate_response(messages)
-        print("List interests", res)
-        res = json.loads(res)
+        print("List interests from gpt: ", res)
+        res = json.loads(str(res).strip("'<>() ").replace('\'', '\"'))
         result = []
         for i in res:
             for interest in data:

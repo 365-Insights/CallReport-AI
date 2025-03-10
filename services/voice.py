@@ -81,7 +81,6 @@ def speech_recog(file_name: str, locale = "en-US"):
 
 
 def text2speech(text: str, lang_voice: str = 'en-US-AvaMultilingualNeural'):
-    print(subscription_key, region)
     text = text.replace("\n", "")
     speech_config = speechsdk.SpeechConfig(subscription=subscription_key, region=region)
     audio_config = speechsdk.audio.PullAudioOutputStream()

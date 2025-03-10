@@ -68,4 +68,6 @@ class OpenAiClient:
     def process_output(text):
         text = text.replace("```", "")
         text = text.replace("python", "")
-        return text
+        text = text.replace("\n", "").strip()
+
+        return text.strip("\n")
