@@ -23,7 +23,7 @@ class VoiceBot:
         # if session_id:
         user_data = self.users_states.get(session_id)
         if not user_data:
-            user_data = UserData(session_id, "default", {}, "")
+            user_data = UserData(session_id, "default", {}, "", "", lang)
         last_message = user_data.last_message
         last_answer = user_data.last_answer
             
@@ -33,9 +33,10 @@ class VoiceBot:
             try:  
                 output_path = convert_base64_webm_to_wav(value, audio_path)  
                 user_text = fast_speech_recog(output_path, lang=lang)  
+                print("USER TEXT: ", user_text)
             except Exception as e:  
                 raise RuntimeError(f"Audio processing failed: {str(e)}")  
-            msg_type = await self.classify_user_message(user_text, last_message)  
+            msg_type = await self.classify_user_message(user_text, last_message, last_answer)  
         elif request_type in ["listInterests", "listContactFields"]:  
             user_text = last_message  
             msg_type = "Fill interests" if request_type == "listInterests" else "Create contact"  
@@ -74,7 +75,7 @@ class VoiceBot:
                 order = res.get("order", 0)
                 commands.extend(res["commands"])
 
-        elif msg_type == "Update current contact":
+        elif msg_type == "Update contact info":
             contact = await self.extract_info_from_text(text, payload)
             order+=1
             commands.append(self.gen_general_command("updateCurrentContact", contact, "json", order))
@@ -87,6 +88,11 @@ class VoiceBot:
         elif msg_type == "Add follow ups":
             follow_apps = await self.extract_follow_ups(text)
             commands.append(self.gen_general_command("addFollowUps", follow_apps, "list", order))
+        elif msg_type == "None":
+            answer = await self.generate_general_answer(text)
+            user_state.last_answer = answer
+            order += 1
+            commands.append(self.gen_voice_play_command(answer, order, user_state.language))
         return commands, user_state
     
 
@@ -126,7 +132,7 @@ class VoiceBot:
                 user_data.state = "fill_required"
                 order += 1
                 msg = await self.generate_missing_field_message(text, missing_fields)
-                extend_commands.append(self.gen_voice_play_command(msg, order))
+                extend_commands.append(self.gen_voice_play_command(msg, order, user_data.language))
                 user_data.last_answer = msg
                 # else:
             
@@ -151,10 +157,10 @@ class VoiceBot:
         return {"commands": extend_commands, "interests": interests, "order": order}
     
 
-    async def classify_user_message(self, message: str, last_message: str = None):
+    async def classify_user_message(self, message: str, last_message: str = None, last_answer: str = None):
         messages = [
                 {"role": "system", "content": classification_system_prompt},
-                {"role": "user", "content": classification_prompt + message + "'"}
+                {"role": "user", "content": get_classification_prompt(message, last_answer, last_message) + message + "'"}
             ]
         res = await self.openai_client.generate_response(messages)
         return res
@@ -245,6 +251,15 @@ class VoiceBot:
         message = await self.openai_client.generate_response(messages)
         return message
 
+
+    async def generate_general_answer(self, user_msg):
+        prompt = get_general_answer_prompt(user_msg)
+        messages = [
+                {"role": "user", "content": prompt}
+            ]
+        message = await self.openai_client.generate_response(messages)
+        return message
+    
 
     @staticmethod
     def gen_general_command(command_name: str, value = {}, val_type: str = dict, order: int = 1):

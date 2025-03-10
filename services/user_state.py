@@ -8,6 +8,7 @@ class UserData:
     history_data: dict
     last_message: str
     last_answer: str = None
+    language: str = "en-US"
 
 class Commands(Enum):
     playBotVoice = 0
