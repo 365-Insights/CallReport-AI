@@ -2,14 +2,11 @@
 from .openai_client import OpenAiClient
 from .voice import fast_speech_recog, speech_recog, text2speech
 from .llm_prompts import *
-from utils import convert_base64_webm_to_wav
+from utils import convert_base64_webm_to_wav, lang2voice
 from uuid import uuid4
 from .user_state import UserData
 
-lang2voice = {
-    "en-US": "en-US-AvaMultilingualNeural",
-    "de-DE": "de-DE-KatjaNeural"
-}
+
 default_fields = {"GeneralInformation": {"Gender": "", "FirstName": "", "LastName": ""},"BusinessInformation": {"Company": "", "City": "", "Country": "", "Street": "", "HouseNumber": "", "PostalCode": "", "AdditionalInformationAddress": "", "PositionLevel": "", "Department": "", "JobTitle": "", "Industry": "", "EducationLevel": "", "PhoneNumber": "", "MobilePhoneNumber": "", "BusinessEmail": ""}, "PersonalInformation": { "City": "", "Country": "", "Street": "", "HouseNumber": "", "PostalCode": "", "AdditionalInfoAddress": "", "PhoneNumber": "", "MobilePhoneNumber": "", "PersonalEMail": "" }}
 required_fields = ["FirstName", "LastName", "Company", "BusinessEmail"]
 

@@ -3,7 +3,10 @@ import tempfile
 import base64  
 import os  
 import traceback  
+import json
 import uuid
+
+
 def convert_base64_webm_to_wav(base64_audio_data, output_filename):  
     """  
     Converts a base64-encoded .webm audio file to a .wav file.  
@@ -46,3 +49,8 @@ def convert_base64_webm_to_wav(base64_audio_data, output_filename):
         print(f"An unexpected error occurred: {e}")  
         print(traceback.format_exc())  
         return None  
+
+
+
+with open("utils/lang_voice.json", "r") as f:
+    lang2voice = json.loads(f.read())

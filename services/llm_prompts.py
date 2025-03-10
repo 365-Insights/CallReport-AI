@@ -1,8 +1,5 @@
 import json
 
-with open("config/user_req_types.json") as f:
-    dc = json.loads(f.read())
-dc = list(dc.keys())
 
 extract_form_system_prompt = "You are a highly accurate and efficient assistant designed to extract specific information from transcribed text. Your task is to extract the following data obtained using the Speech-to-Text service, check the spelling, and consider that it may be a dialogue. Correct first names if they appear unusual or incorrect."
 
@@ -15,8 +12,6 @@ Do not include any explanations, return only the JSON object, and do not exclude
     return extract_form_user_prompt
 
 
-classification_list = "\n- ".join(dc)
-print(classification_list)
 classification_system_prompt = """You are an intelligent assistant designed to classify user messages into one of the following categories:
 - Create contact
 - Create a report
