@@ -136,3 +136,7 @@ __azurite_db*__.json
 main.ipynb
 test_audios/
 .DS_Store
+.Dockerignore
+host.json
+.vscode
+temp

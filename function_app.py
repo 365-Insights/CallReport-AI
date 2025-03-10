@@ -1,25 +1,55 @@
-import azure.functions as func
+import os
 import logging
+import asyncio
+import json
+
+import azure.cognitiveservices.speech as speechsdk
+import azure.functions as func
+from dotenv import load_dotenv
+
+
+from services import *
+
+load_dotenv()
+
+
+openai_config = {
+    "ENDPOINT": os.environ.get("openai_endpoint"),
+    "API_KEY": os.environ.get("openai_key"),
+    "MODEL": os.environ.get("llm_model"),
+    "API_VERSION": os.environ.get("openai_api_version")
+}
+
+voice_bot = VoiceBot(openai_config)
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 
-@app.route(route="http_trigger")
-def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info('Python HTTP trigger function processed a request.')
 
-    name = req.params.get('name')
-    if not name:
-        try:
-            req_body = req.get_json()
-        except ValueError:
-            pass
-        else:
-            name = req_body.get('name')
+@app.function_name(name="VoiceBot")
+@app.route(route="req")
+async def main(req: func.HttpRequest) -> func.HttpResponse:
+    try:
+        req_body = req.get_json()
+        req_type = req_body.get('type')
+        sessionID = req_body.get('callreportID')
+        value = req_body.get('value')
+        language = req_body.get("language")
+        response = await voice_bot.process_user_message(language, req_type, sessionID, value)
+        # test = {"tets": 123, "test": 23}
+        return func.HttpResponse(json.dumps(response), mimetype="application/json")
 
-    if name:
-        return func.HttpResponse(f"Hello, {name}. This HTTP triggered function executed successfully.")
-    else:
+    except ValueError:
         return func.HttpResponse(
-             "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.",
-             status_code=200
+            "Invalid input",
+            status_code=400
         )
+    
+    
+# if __name__ == "__main__":
+#     req = {
+#         "type": "record",
+#         "language": "en-US",
+#         "callreportID": "guid",
+#         "value": "/135135...." 
+#     }
+#     res = main(req)

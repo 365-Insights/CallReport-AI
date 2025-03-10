@@ -4,7 +4,6 @@ import asyncio
 
 import openai
 from openai import AsyncAzureOpenAI
-from utils import LOGGER
 
 
 async def retry_with_backoff(
@@ -45,10 +44,9 @@ class OpenAiClient:
             api_version=self.config["API_VERSION"],
             azure_endpoint=self.config["ENDPOINT"],
         )
-        print(self.config["ENDPOINT"], self.config["API_VERSION"], self.config["API_KEY"])
 
 
-    async def generate_response(self, messages: List[Dict[str, str]], max_tokens = None) -> str:
+    async def generate_response(self, messages: List[Dict[str, str]], max_tokens = None, process = True) -> str:
         try:
             # print()
             response = await self.gen_client.chat.completions.create(
@@ -60,7 +58,14 @@ class OpenAiClient:
             frequency_penalty=0,
             presence_penalty=0
             )
-            return response.choices[0].message.content
+            output = response.choices[0].message.content
+            return self.process_output(output) if process else output
         except Exception as e:
-            LOGGER.debug(f"Error during call for gpt: {e}\nTraceback:\n{traceback.format_exc()}")
+            print(f"Error during call for gpt: {e}\nTraceback:\n{traceback.format_exc()}")
             return None
+        
+    @staticmethod
+    def process_output(text):
+        text = text.replace("```", "")
+        text = text.replace("python", "")
+        return text

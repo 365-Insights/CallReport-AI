@@ -1,71 +1,48 @@
-import logging
-import json
-from typing import Literal
-from datetime import datetime
-import os
-from constants import SingletonMeta
-# from opencensus.ext.azure.log_exporter import AzureLogHandler
 
+import logging
+from opencensus.ext.azure.log_exporter import AzureLogHandler
+import os
 from dotenv import load_dotenv
 
-class CustomFormatter(logging.Formatter):
-    def format(self, record):
-        dtime = self.formatTime(record, self.datefmt)
-        msg = record.getMessage()
-        level = record.levelname
-        log_record = {
-            "timestamp": self.formatTime(record, self.datefmt),
-            "level": record.levelname,
-            "message": record.getMessage(),
-        }
-        # return json.dumps(log_record, ensure_ascii=True)
-        return f"{level}|{dtime}|{msg}"
+load_dotenv()
 
-    def formatTime(self, record, datefmt=None):
-        return datetime.fromtimestamp(record.created).strftime('%Y-%m-%dT%H:%M:%S.%fZ')[:-3]
+class PrintToAzureHandler(logging.Handler):
+    def __init__(self, connection_string):
+        super().__init__()
+        self.azure_handler = AzureLogHandler(connection_string=connection_string)
+
+    def emit(self, record):
+        log_entry = self.format(record)
+        self.azure_handler.emit(record)
 
 
-class CustomLogger(metaclass=SingletonMeta):
-    def __init__(self, severity_level: Literal["debug", "info", "warning", "error", "fatal"], instrumentation_key: str = None):
-        self.__level_to_log_object = {
-            "debug": logging.DEBUG,
-            "info": logging.INFO,
-            "warning": logging.WARNING,
-            "error": logging.ERROR,
-            "fatal": logging.CRITICAL,
-        }
-        self.__init__logger(self.__level_to_log_object.get(severity_level, logging.INFO), instrumentation_key)
+# Replace 'your_connection_string' with your actual Azure Application Insights connection string
+instrumentation_key = os.getenv("AZURE_APP_INSIGHTS")
+connection_string=f'{instrumentation_key}'
+azure_handler = PrintToAzureHandler(connection_string)
 
 
-    def __init__logger(self, level: int, instrumentation_key: str = None):
-        self.__logger = logging.Logger('custom_logger', level)
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(level)
-        # console_handler.setFormatter(CustomFormatter())
-        self.__logger.addHandler(console_handler)
-        # if instrumentation_key:
-        #     azure_handler = AzureLogHandler(connection_string=f'InstrumentationKey={instrumentation_key}')
-        #     azure_handler.setLevel(level)
-        #     self.__logger.addHandler(azure_handler)
-        
+import sys
 
-    def debug(self, msg: str, extra: dict = None):
-        self.__logger.debug(msg, extra=extra)
+class LoggerWriter:
+    def __init__(self, level):
+        self.level = level
 
-    def info(self, msg: str, extra: dict = None):
-        self.__logger.info(msg, extra=extra)
+    def write(self, message):
+        if message != '\n':  # Ignore empty messages
+            self.level(message)
 
-    def warning(self, msg: str, extra: dict = None):
-        self.__logger.warning(msg, extra=extra)
+    def flush(self):
+        pass
 
-    def error(self, msg: str, extra: dict = None):
-        self.__logger.error(msg, extra=extra)
+logger = logging.getLogger('azure')
+logger.setLevel(logging.INFO)
+logger.addHandler(azure_handler)
 
-    def fatal(self, msg: str, extra: dict = None):
-        self.__logger.critical(msg, extra=extra)
+# Add a StreamHandler to output to the console
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setLevel(logging.INFO)
+logger.addHandler(console_handler)
 
-instrument_key = load_dotenv()
-instrument_key = os.getenv("INSTRUMENT_KEY", None)
-
-logging.basicConfig(level=logging.CRITICAL)
-LOGGER = CustomLogger("debug", instrument_key)
+sys.stdout = LoggerWriter(logger.info)
+sys.stderr = LoggerWriter(logger.error)
