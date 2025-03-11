@@ -2,7 +2,7 @@
 from .openai_client import OpenAiClient
 from .voice import fast_speech_recog, speech_recog, text2speech
 from .llm_prompts import *
-from utils import convert_base64_webm_to_wav, lang2voice
+from utils import convert_base64_webm_to_wav, lang2voice, load_preprocess_json
 from uuid import uuid4
 from .user_state import UserData
 
@@ -16,7 +16,7 @@ class VoiceBot:
         self.users_states = {} # report_id to state
 
 
-    async def process_user_message(self, lang: str = "de-DE", request_type: str = "", session_id: str = None, value = {}):
+    async def process_user_message(self, lang: str = "de-DE", request_type: str = "", session_id: str = None, payload = {}):
         file_id = uuid4()
         print(file_id)
         
@@ -31,19 +31,21 @@ class VoiceBot:
         if request_type == "record":  
             audio_path = f"temp/{file_id}.wav"  
             try:  
-                output_path = convert_base64_webm_to_wav(value, audio_path)  
+                output_path = convert_base64_webm_to_wav(payload, audio_path)  
                 user_text = fast_speech_recog(output_path, lang=lang)  
                 print("USER TEXT: ", user_text)
             except Exception as e:  
                 raise RuntimeError(f"Audio processing failed: {str(e)}")  
             msg_type = await self.classify_user_message(user_text, last_message, last_answer)  
         elif request_type in ["listInterests", "listContactFields"]:  
+            payload = load_preprocess_json(payload)
+            print("PROCESSED", type(payload))
             user_text = last_message  
             msg_type = "Fill interests" if request_type == "listInterests" else "Create contact"  
         else:  
             raise ValueError(f"Unsupported request_type: {request_type}")  
         print(f"Classification: {msg_type}") 
-        commands, user_state = await self.generate_answer(user_text, msg_type, request_type, value, user_data)
+        commands, user_state = await self.generate_answer(user_text, msg_type, request_type, payload, user_data)
         user_state.last_message = user_text 
         self.users_states[session_id] = user_state
         response = self.form_response(commands, session_id)
@@ -115,13 +117,14 @@ class VoiceBot:
                 print(user_data.history_data.get("contact_fields"))
                 cmd_name = "updateCurrentContact"
                 print(11111111)
-            else:
-                required_fields = json.loads(payload)["RequiredFields"]
+            else:   
+                # print(load_preprocess_json(payload))
+                required_fields = payload["RequiredFields"]
                 print(222222)
                 cmd_name = "createContact"
                 contact_fields = await self.extract_info_from_text(text, payload)
                 
-            contact_fields = json.loads(contact_fields)
+            contact_fields = load_preprocess_json(contact_fields)
             user_data.history_data["contact_fields"] = contact_fields
             missing_fields = self.check_required_filled(contact_fields, required_fields)
             print("Missed", missing_fields)
@@ -138,7 +141,7 @@ class VoiceBot:
             
         return {"commands": extend_commands, "contact_fields": contact_fields, "order": order, "is_give_list": is_give_list, "answer": msg}, user_data
 
-    async def fill_in_interests(self, text: str, value, user_data: UserData, request_type: str, order = 0):
+    async def fill_in_interests(self, text: str, payload, user_data: UserData, request_type: str, order = 0):
         extend_commands = []
         interests = None
         if request_type == "record":
@@ -147,7 +150,7 @@ class VoiceBot:
             extend_commands.append(self.gen_general_command(command_name, order = order))
         else:
             command_name = "fillInterests"
-            interests = await self.extract_list_interests(text, json.loads(value))
+            interests = await self.extract_list_interests(text, payload)
             order += 1
             extend_commands.append(self.gen_general_command(command_name, interests, "list", order))
             summery = await self.generate_summery(text, interests)
@@ -169,7 +172,7 @@ class VoiceBot:
     async def extract_info_from_text(self, text: str, fields: dict):
         messages = [
                 {"role": "system", "content": extract_form_system_prompt},
-                {"role": "user", "content": prompt_fill_form_fields(default_fields) + text}
+                {"role": "user", "content": prompt_fill_form_fields(fields) + text}
             ]
         res = await self.openai_client.generate_response(messages)
         print("FIlled fields", res)
@@ -183,7 +186,7 @@ class VoiceBot:
             ]
         res = await self.openai_client.generate_response(messages)
         print("Add follow ups", res)
-        res = json.loads(str(res).strip("'<>() ").replace('\'', '\"'))
+        res = load_preprocess_json(res)
         return res
     
 
@@ -197,7 +200,7 @@ class VoiceBot:
             ]
         res = await self.openai_client.generate_response(messages)
         print("List interests from gpt: ", res)
-        res = json.loads(str(res).strip("'<>() ").replace('\'', '\"'))
+        res = load_preprocess_json(res)
         result = []
         for i in res:
             for interest in data:

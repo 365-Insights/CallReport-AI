@@ -1,45 +1,65 @@
+import base64  
 import ffmpeg  
 import tempfile  
-import base64  
 import os  
 import traceback  
 import json
-import uuid
+import re
+from ast import literal_eval  
 
+
+def sanitize_base64_string(base64_audio_data):  
+    """  
+    Sanitizes the Base64 string by removing prefixes and fixing padding.  
+    """  
+    try:  
+        # Remove any data URI scheme prefix (e.g., "data:audio/webm;base64,")  
+        if "," in base64_audio_data:  
+            base64_audio_data = base64_audio_data.split(",")[1]  
+          
+        # Fix padding by ensuring the length is a multiple of 4  
+        missing_padding = len(base64_audio_data) % 4  
+        if missing_padding != 0:  
+            base64_audio_data += "=" * (4 - missing_padding)  
+          
+        return base64_audio_data  
+    except Exception as e:  
+        print(f"Error sanitizing Base64 string: {e}")  
+        print(traceback.format_exc())  
+        return None  
+  
 
 def convert_base64_webm_to_wav(base64_audio_data, output_filename):  
     """  
-    Converts a base64-encoded .webm audio file to a .wav file.  
-      
-    Parameters:  
-        base64_audio_data (str): The base64-encoded .webm audio data.  
-        output_filename (str): The desired name of the output .wav file.  
-  
-    Returns:  
-        str: The path to the converted .wav file, or None if an error occurred.  
+    Converts a Base64-encoded .webm audio file to a .wav file.  
     """  
     try:  
-        # Decode the base64 audio data  
-        audio_data = base64.b64decode(base64_audio_data)  
+        # Sanitize the Base64 string  
+        sanitized_base64 = sanitize_base64_string(base64_audio_data)  
+        if sanitized_base64 is None:  
+            raise ValueError("Failed to sanitize Base64 string")  
           
+        # Decode the Base64 audio data  
+        audio_data = base64.b64decode(sanitized_base64)  
+  
         # Create a temporary file for the .webm data  
         with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as temp_webm_file:  
             temp_webm_file.write(audio_data)  
             temp_webm_path = temp_webm_file.name  
         print(f"Temporary .webm file created at: {temp_webm_path}")  
-          
-        # Create a temporary directory for the output .wav file  
-        output_path = output_filename
+  
+        # Define output path for .wav file  
+        output_path = output_filename  
         print(f"Output .wav file will be saved at: {output_path}")  
-        print("DOES file exists: ", os.path.exists(temp_webm_path))
+  
         # Convert the .webm file to .wav using ffmpeg-python  
         ffmpeg.input(temp_webm_path).output(output_path).run()  
         print("Conversion completed successfully.")  
-          
+  
         # Clean up the temporary .webm file  
         os.remove(temp_webm_path)  
         print(f"Temporary .webm file deleted: {temp_webm_path}")  
-          
+  
         return output_path  
     except ffmpeg.Error as e:  
         print(f"Error during ffmpeg conversion: {e}")  
@@ -50,6 +70,31 @@ def convert_base64_webm_to_wav(base64_audio_data, output_filename):
         print(traceback.format_exc())  
         return None  
 
+def load_preprocess_json(text: str):  
+    # Step 1: Remove outer quotes if present  
+    if text.startswith('"') and text.endswith('"'):  
+        text = text[1:-1]  
+  
+    # Step 2: Normalize escaped characters (e.g., \\\" -> \")  
+    text = text.replace('\\"', '"').replace('\\\\', '\\')  
+    # text = str(text).strip("'<>()\\ \"").replace('\'', '\"')
+    text = text.replace("\'", "\"")
+    # Step 3: Attempt to parse the cleaned JSON string  
+    try:  
+        parsed = json.loads(text)  
+  
+        # Step 4: If the result is still a string (e.g., nested JSON), parse it again  
+        if isinstance(parsed, str):  
+            try:  
+                return json.loads(parsed)  
+            except json.JSONDecodeError:  
+                pass  # It's just a string, not nested JSON  
+  
+        return parsed  
+    except json.JSONDecodeError as e:  
+        # Raise a descriptive error if parsing fails  
+        print(traceback.format_exc())
+        raise ValueError(f"Failed to parse JSON: {text}") from e  
 
 
 with open("utils/lang_voice.json", "r") as f:
