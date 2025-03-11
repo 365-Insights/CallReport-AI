@@ -18,12 +18,12 @@ Provide no explanations or additional text, only the name of the selected catego
 def get_classification_prompt(user_msg, bot_answer, last_msg):
     classification_prompt = f"""Classify the current user message into one of the predefined categories:    
 - Create contact    
-- Create a report    
+- Create report    
 - Fill interests    
 - Update contact info    
 - Add follow-ups    
 - Cancel    
-- Save document    
+- Save    
 - None    
   
 Use the following context to make your decision:    

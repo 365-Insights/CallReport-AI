@@ -2,7 +2,7 @@
 from .openai_client import OpenAiClient
 from .voice import fast_speech_recog, speech_recog, text2speech
 from .llm_prompts import *
-from utils import convert_base64_webm_to_wav, lang2voice, load_preprocess_json
+from utils import convert_base64_audio_to_wav, lang2voice, load_preprocess_json
 from uuid import uuid4
 from .user_state import UserData
 
@@ -31,7 +31,7 @@ class VoiceBot:
         if request_type == "record":  
             audio_path = f"temp/{file_id}.wav"  
             try:  
-                output_path = convert_base64_webm_to_wav(payload, audio_path)  
+                output_path = convert_base64_audio_to_wav(payload, audio_path)  
                 user_text = fast_speech_recog(output_path, lang=lang)  
                 print("USER TEXT: ", user_text)
             except Exception as e:  
@@ -43,7 +43,7 @@ class VoiceBot:
             msg_type = "Fill interests" if request_type == "listInterests" else "Create contact"  
         else:  
             raise ValueError(f"Unsupported request_type: {request_type}")  
-        print(f"Classification: {msg_type} with user text - {user_text}") 
+        print(f"Classification: {msg_type} | with user text - {user_text}") 
         commands, user_state = await self.generate_answer(user_text, msg_type, request_type, payload, user_data)
         user_state.last_message = user_text 
         self.users_states[session_id] = user_state
@@ -54,7 +54,7 @@ class VoiceBot:
     def form_response(self, commands: list, session_id: str = None) -> dict:
         return {
             "commands": commands,
-            "callreportID": session_id
+            "se": session_id
         }
     
 

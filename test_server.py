@@ -32,7 +32,8 @@ logging.info("INITIALISED SUCCESSFULLY")
 class RequestPayload(BaseModel):  
     type: str  
     language: str  
-    callreportID: str  
+    sessionID: str  
+    callreportID: str
     value: str  
   
   
@@ -41,10 +42,12 @@ async def process_request(payload: RequestPayload):
     """  
     Handle POST requests to process user messages.  
     """  
+    print(payload)
     try:  
         # Extract data from the request payload  
         req_type = payload.type  
-        sessionID = payload.callreportID  
+        sessionID = payload.sessionID  
+        callreportID = payload.callreportID
         value = payload.value  
         language = payload.language  
         # print("VALUE", value)
@@ -67,4 +70,5 @@ async def process_request(payload: RequestPayload):
 if __name__ == "__main__":  
     import uvicorn  
   
+    # uvicorn.run(app, host="localhost", port=8000)  
     uvicorn.run(app, host="0.0.0.0", port=8000)  

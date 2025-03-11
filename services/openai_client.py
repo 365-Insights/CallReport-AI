@@ -68,6 +68,7 @@ class OpenAiClient:
     def process_output(text):
         text = text.replace("```", "")
         text = text.replace("python", "")
+        text = text.replace("json", "")
         text = text.replace("\n", "").strip()
 
         return text.strip("\n")
