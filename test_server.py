@@ -54,7 +54,7 @@ async def process_request(payload: RequestPayload):
         # new_path = convert_base64_webm_to_wav(value, "test.wav")
         # print(new_path)
         # Process the user message using VoiceBot  
-        response = await voice_bot.process_user_message(language, req_type, sessionID, value)  
+        response = await voice_bot.process_user_message(language, req_type, sessionID, callreportID, value)  
   
         # Example test response (can be replaced with the actual response)  
   
@@ -69,6 +69,5 @@ async def process_request(payload: RequestPayload):
 # For debugging or testing purposes  
 if __name__ == "__main__":  
     import uvicorn  
-  
-    # uvicorn.run(app, host="localhost", port=8000)  
-    uvicorn.run(app, host="0.0.0.0", port=8000)  
+    uvicorn.run(app, host="localhost", port=8000)  
+    # uvicorn.run(app, host="0.0.0.0", port=8000)  

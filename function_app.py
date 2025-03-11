@@ -32,6 +32,7 @@ async def main(req: func.HttpRequest) -> func.HttpResponse:
         req_body = req.get_json()
         req_type = req_body.get('type')
         sessionID = req_body.get('sessionID')
+        callreportID = req_body.get("callreportID")
         value = req_body.get('value')
         language = req_body.get("language")
         response = await voice_bot.process_user_message(language, req_type, sessionID, value)

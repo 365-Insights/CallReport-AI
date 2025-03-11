@@ -16,7 +16,7 @@ class VoiceBot:
         self.users_states = {} # report_id to state
 
 
-    async def process_user_message(self, lang: str = "de-DE", request_type: str = "", session_id: str = None, payload = {}):
+    async def process_user_message(self, lang: str = "de-DE", request_type: str = "", session_id: str = None, callreportID: str = None, payload = {}):
         file_id = uuid4()
         print(file_id)
         
@@ -44,7 +44,9 @@ class VoiceBot:
         else:  
             raise ValueError(f"Unsupported request_type: {request_type}")  
         print(f"Classification: {msg_type} | with user text - {user_text}") 
-        commands, user_state = await self.generate_answer(user_text, msg_type, request_type, payload, user_data)
+        not_in_call_report =  not callreportID or callreportID.lower() == "null" or callreportID.lower() == "none"
+        commands, user_state = await self.generate_answer(user_text, msg_type, request_type, payload, user_data, not_in_call_report)
+
         user_state.last_message = user_text 
         self.users_states[session_id] = user_state
         response = self.form_response(commands, session_id)
@@ -54,18 +56,30 @@ class VoiceBot:
     def form_response(self, commands: list, session_id: str = None) -> dict:
         return {
             "commands": commands,
-            "se": session_id
+            "sessionID": session_id
         }
     
 
-    async def generate_answer(self, text, msg_type, request_type: str, payload = None, user_state = None):
+    async def generate_answer(self, text, msg_type, request_type: str, payload = None, user_state = None, not_in_call_report = False):
         commands = []
         order = 0
         print(msg_type)
+        print(not_in_call_report)
         if msg_type == "Create contact" or msg_type == "Create report":
             res, user_state = await self._create_contact(text, payload, user_state, request_type, order)
             commands.extend(res["commands"])
             order = res["order"]
+        elif msg_type == "None":
+            answer = await self.generate_general_answer(text)
+            user_state.last_answer = answer
+            order += 1
+            commands.append(self.gen_voice_play_command(answer, order, user_state.language))
+        elif not_in_call_report:
+            print("Can't do this not inside call report with classification: ", msg_type)
+            answer = await self.generate_not_in_callreport_answer(text)
+            user_state.last_answer = answer
+            order += 1
+            commands.append(self.gen_voice_play_command(answer, order, user_state.language))
         elif msg_type == "Fill interests":
             if request_type == "record":
                 command_name = "giveListInterests"
@@ -89,11 +103,7 @@ class VoiceBot:
         elif msg_type == "Add follow ups":
             follow_apps = await self.extract_follow_ups(text)
             commands.append(self.gen_general_command("addFollowUps", follow_apps, "list", order))
-        elif msg_type == "None":
-            answer = await self.generate_general_answer(text)
-            user_state.last_answer = answer
-            order += 1
-            commands.append(self.gen_voice_play_command(answer, order, user_state.language))
+        
         return commands, user_state
     
 
@@ -260,6 +270,14 @@ class VoiceBot:
         message = await self.openai_client.generate_response(messages)
         return message
     
+
+    async def generate_not_in_callreport_answer(self, user_msg: str):
+        prompt = get_prompt_not_in_call_report(user_msg)
+        messages = [
+                {"role": "user", "content": prompt}
+            ]
+        message = await self.openai_client.generate_response(messages)
+        return message
 
     @staticmethod
     def gen_general_command(command_name: str, value = {}, val_type: str = dict, order: int = 1):

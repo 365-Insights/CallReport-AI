@@ -110,3 +110,12 @@ Your tone should be polite, encouraging, and professional. Make the user feel we
   
 User Message: '{user_message}'  """
     return prompt
+
+
+def get_prompt_not_in_call_report(user_msg: str):
+    prompt = f"""The user has requested an action, but before proceeding with their request, they need to create a call report or open an existing one. Generate a polite and friendly response to inform the user of this requirement. Make sure the tone is supportive and encouraging, and clearly explain that creating or opening a call report is necessary before continuing.  
+    
+    If appropriate, offer guidance on how they can create or open a call report, or let them know you’re available to assist with this step.    
+    
+    User Message: "{user_msg}"  """
+    return prompt
