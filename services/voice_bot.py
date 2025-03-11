@@ -39,12 +39,11 @@ class VoiceBot:
             msg_type = await self.classify_user_message(user_text, last_message, last_answer)  
         elif request_type in ["listInterests", "listContactFields"]:  
             payload = load_preprocess_json(payload)
-            print("PROCESSED", type(payload))
             user_text = last_message  
             msg_type = "Fill interests" if request_type == "listInterests" else "Create contact"  
         else:  
             raise ValueError(f"Unsupported request_type: {request_type}")  
-        print(f"Classification: {msg_type}") 
+        print(f"Classification: {msg_type} with user text - {user_text}") 
         commands, user_state = await self.generate_answer(user_text, msg_type, request_type, payload, user_data)
         user_state.last_message = user_text 
         self.users_states[session_id] = user_state
@@ -116,11 +115,9 @@ class VoiceBot:
                 contact_fields = await self.extract_info_from_text(text, user_data.history_data.get("contact_fields"))
                 print(user_data.history_data.get("contact_fields"))
                 cmd_name = "updateCurrentContact"
-                print(11111111)
             else:   
                 # print(load_preprocess_json(payload))
                 required_fields = payload["RequiredFields"]
-                print(222222)
                 cmd_name = "createContact"
                 contact_fields = await self.extract_info_from_text(text, payload)
                 
