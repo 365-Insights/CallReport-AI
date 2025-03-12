@@ -42,7 +42,6 @@ async def process_request(payload: RequestPayload):
     """  
     Handle POST requests to process user messages.  
     """  
-    print(payload)
     try:  
         # Extract data from the request payload  
         req_type = payload.type  

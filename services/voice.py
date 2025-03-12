@@ -95,9 +95,11 @@ def text2speech(text: str, lang_voice: str = 'en-US-AvaMultilingualNeural'):
 
     if speech_synthesis_result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
         print("Speech synthesized for text [{}]".format(text))
+        duration = speech_synthesis_result.audio_duration
         audio_data = speech_synthesis_result.audio_data
+
         audio_base64 = base64.b64encode(audio_data).decode('utf-8')
-        return audio_base64
+        return audio_base64, duration.total_seconds()*1000
     elif speech_synthesis_result.reason == speechsdk.ResultReason.Canceled:
         cancellation_details = speech_synthesis_result.cancellation_details
         print("Speech synthesis canceled: {}".format(cancellation_details.reason))
@@ -109,7 +111,7 @@ def text2speech(text: str, lang_voice: str = 'en-US-AvaMultilingualNeural'):
     
 # Example usage
 def main():
-    text = "Hello, test. "
+    text = "Hello, test. This is super long test audio that is just meaningless text. This is super long test audio that is just meaningless text. This is super long test audio that is just meaningless text. This is super long test audio that is just meaningless text. "
     audio_base64 = text2speech(text)
     with open("output.webm", 'wb') as file:
         file.write(base64.b64decode(audio_base64))

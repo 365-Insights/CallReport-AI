@@ -238,16 +238,17 @@ class VoiceBot:
 
     def _generate_audio(self, text, lang = "en-US"):
         voice = lang2voice.get(lang, "en-US-AvaMultilingualNeural")
-        audio_data = text2speech(text, voice)
-        return audio_data
+        audio_data, duration = text2speech(text, voice)
+        return audio_data, duration
 
 
     # @staticmethod
     def gen_voice_play_command(self, text: str, order = 1, lang = "en-US"):
-        audio_data = self._generate_audio(text, lang)
+        audio_data, duration = self._generate_audio(text, lang)
         val = {
                 "record": audio_data,
-                "textMessage": text
+                "textMessage": text,
+                "duration": duration
                 }
         voice_play = self.gen_general_command("playBotVoice", val, "record", order)
         return voice_play
