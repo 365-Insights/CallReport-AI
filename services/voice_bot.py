@@ -91,7 +91,10 @@ class VoiceBot:
                 commands.extend(res["commands"])
 
         elif msg_type == "Update contact info":
-            contact = await self.extract_info_from_text(text, payload)
+            contact_fields = user_state.history_data.get("contact_fields")
+            if not contact_fields: 
+                contact_fields = default_fields
+            contact = await self.extract_info_from_text(text, contact_fields)
             order+=1
             commands.append(self.gen_general_command("updateCurrentContact", contact, "json", order))
         elif msg_type == "Cancel":
@@ -108,7 +111,7 @@ class VoiceBot:
     
 
     async def _create_contact(self, text: str, payload, user_data: UserData, request_type: str, order = 0):
-        global required_fields
+        global required_fields, default_fields
         extend_commands = []
         is_give_list = 0
         msg = ""
@@ -126,6 +129,8 @@ class VoiceBot:
                 cmd_name = "updateCurrentContact"
             else: # if we
                 # print(load_preprocess_json(payload))
+                if isinstance(payload, dict):
+                    default_fields = payload
                 required_fields = payload["RequiredFields"]
                 cmd_name = "createContact"
                 contact_fields = await self.extract_info_from_text(text, payload)
