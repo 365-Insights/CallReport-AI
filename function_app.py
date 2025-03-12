@@ -2,7 +2,7 @@ import os
 import logging
 import asyncio
 import json
-
+import traceback
 import azure.cognitiveservices.speech as speechsdk
 import azure.functions as func
 from dotenv import load_dotenv
@@ -39,9 +39,11 @@ async def main(req: func.HttpRequest) -> func.HttpResponse:
         # test = {"tets": 123, "test": 23}
         return func.HttpResponse(json.dumps(response), mimetype="application/json")
 
-    except ValueError:
+    except Exception:
+        print("Encountered an exception")
+        print(traceback.format_exc())
         return func.HttpResponse(
-            "Invalid input",
+            "Processing Error",
             status_code=400
         )
     

@@ -112,20 +112,19 @@ class VoiceBot:
         extend_commands = []
         is_give_list = 0
         msg = ""
-        if request_type == "record" and not user_data.history_data.get("contact_fields"):
+        if request_type == "record":
             command_name = "giveListContactFilds"
             order += 1
             extend_commands.append(self.gen_general_command(command_name, order = order))
             contact_fields = None
             msg = None
         else: 
-            
             # required_fields = ["FirstName", "LastName", "Company", "BusinessEmail"]
             if user_data.state == "fill_required":
                 contact_fields = await self.extract_info_from_text(text, user_data.history_data.get("contact_fields"))
                 print(user_data.history_data.get("contact_fields"))
                 cmd_name = "updateCurrentContact"
-            else:   
+            else: # if we
                 # print(load_preprocess_json(payload))
                 required_fields = payload["RequiredFields"]
                 cmd_name = "createContact"
