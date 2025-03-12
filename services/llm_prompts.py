@@ -53,7 +53,7 @@ def get_extract_interests_prompt(user_message, available_interests):
 
     {available_interests}
 
-    Given a user's message, identify and return the most likely interests from the list of available interests. The output should be a Python list of IDs.
+    Given a user's message, identify and return the most likely interests from the list of available interests. The output should be only a Python list of IDs. If there is not relevant interests return empty list: []
 
     User message: "{user_message}"
 
