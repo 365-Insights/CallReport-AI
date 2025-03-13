@@ -32,7 +32,8 @@ class VoiceBot:
             audio_path = f"temp/{file_id}.wav"  
             try:  
                 output_path = convert_base64_audio_to_wav(payload, audio_path)  
-                user_text = fast_speech_recog(output_path, lang=lang)  
+                user_text, lang = fast_speech_recog(output_path)  
+                user_data.language = lang
                 print("USER TEXT: ", user_text)
             except Exception as e:  
                 raise RuntimeError(f"Audio processing failed: {str(e)}")  
@@ -96,7 +97,7 @@ class VoiceBot:
                 contact_fields = default_fields
             contact = await self.extract_info_from_text(text, contact_fields)
             user_state, new_commands = await self.check_info_ask_for_extra_info(text, user_state, "updateCurrentContact", contact, order)
-            commands.append(new_commands)
+            commands.extend(new_commands)
         elif msg_type == "Cancel":
             order += 1
             commands.append(self.gen_general_command("Cancel", order = order))

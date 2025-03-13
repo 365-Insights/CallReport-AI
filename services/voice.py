@@ -14,9 +14,10 @@ region = os.environ.get('speech_service_region')
 subscription_key = os.environ.get('speech_service_key')
 endpoint_fast = f"https://{region}.api.cognitive.microsoft.com/speechtotext/transcriptions:transcribe?api-version=2024-11-15"
 
-def fast_speech_recog(audio_file_path: str, lang = "en-US"):
+
+def fast_speech_recog(audio_file_path: str):
     definition = {
-        "locales": [lang],
+        "locales": ["en-US", "de-DE"],
         "profanityFilterMode": "Masked",
         "channels": [0, 1]
     }
@@ -39,10 +40,12 @@ def fast_speech_recog(audio_file_path: str, lang = "en-US"):
             result = response.json()
             print("Response: ")
             transcript_data = result.get('combinedPhrases', [{}])[0].get('text', '')
+            detected_locale = result.get('locale', 'en-US')
+            print("LANGUAGE: ", detected_locale)
             print(transcript_data)
             elapsed_seconds = time.time() - start_time
             print(f"Transcription took {elapsed_seconds:.4f} seconds")
-            return transcript_data
+            return transcript_data, detected_locale
         else:
             print(f"Error: {response.status_code}")
             print(response.text)

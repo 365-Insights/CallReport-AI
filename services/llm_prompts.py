@@ -1,5 +1,5 @@
 import json
-
+from datetime import datetime
 
 extract_form_system_prompt = "You are a highly accurate and efficient assistant designed to extract specific information from transcribed text. Your task is to extract the following data obtained using the Speech-to-Text service, check the spelling, and consider that it may be a dialogue. Correct first names if they appear unusual or incorrect."
 
@@ -20,11 +20,11 @@ def get_classification_prompt(user_msg, bot_answer, last_msg):
   
 - **Create contact**: The user explicitly requests to create a new contact.   
   
-- **Create report**: The user requests to generate or create a report.  
+- **Create report**: The user explicitly requests to generate or create a report.  
   
 - **Fill interests**: The user mentions interests or preferences that should be recorded or updated, such as hobbies, likes, or areas of focus.    
   
-- **Update contact info**: The user provides contact information (e.g., phone number, email, address) that belongs to an existing contact. If the intent is not to create a new contact but rather to modify or update existing details, classify it here.    
+- **Update contact info**: The user provides some information. If the intent is not to create a new contact but rather to modify or update existing details, classify it here.    
   
 - **Add follow-ups**: The user indicates a need to create tasks, reminders, or action items to be followed up on in the future. These could involve scheduling a call, setting a meeting, or assigning a task.    
   
@@ -50,11 +50,12 @@ Current user message: '{user_msg}'"""
 system_flollow_ups = """You are a highly accurate and efficient assistant designed to extract specific information from transcribed text. Your task is to extract the following data obtained using the Speech-to-Text service, check the spelling, and consider that it may be a dialogue."""
 def get_folow_ups_prompt(user_text: str):
     print(user_text)
+    td = datetime.now()
     extract_follow_ups = f'''Extract follow-ups details from the provided user text and return them in the exact JSON format specified below. Follow these rules strictly:    
 1. The content of each attribute should be inferred and filled appropriately by the model based on the user text:    
    - `notes`: This represents the content or description of the follow-up, such as a task to complete, a call to make, or a meeting to schedule.    
    - `responsibleUser`: The person who is responsible for completing the follow-up.    
-   - `datetime`: The specific date or time when the follow-up should be completed.    
+   - `datetime`: The specific date or time when the follow-up should be completed. (For you reference right now is {td})   
 2. The `type` attribute must be one of the following options: ["task", "call", "meeting"].    
 3. If specific details for an attribute are not explicitly mentioned in the user text, leave that attribute empty.    
 4. Always include all attributes in the JSON object, even if they are empty.    
