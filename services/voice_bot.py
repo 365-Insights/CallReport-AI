@@ -95,8 +95,8 @@ class VoiceBot:
             if not contact_fields: 
                 contact_fields = default_fields
             contact = await self.extract_info_from_text(text, contact_fields)
-            order+=1
-            commands.append(self.gen_general_command("updateCurrentContact", contact, "json", order))
+            user_state, new_commands = await self.check_info_ask_for_extra_info(text, user_state, "updateCurrentContact", contact, order)
+            commands.append(new_commands)
         elif msg_type == "Cancel":
             order += 1
             commands.append(self.gen_general_command("Cancel", order = order))
@@ -134,23 +134,24 @@ class VoiceBot:
                 required_fields = payload["RequiredFields"]
                 cmd_name = "createContact"
                 contact_fields = await self.extract_info_from_text(text, payload)
-                
-            contact_fields = load_preprocess_json(contact_fields)
-            user_data.history_data["contact_fields"] = contact_fields
-            missing_fields = self.check_required_filled(contact_fields, required_fields)
-            print("Missed", missing_fields)
-            # add check for same json structure !!!
-            order += 1
-            extend_commands.append(self.gen_general_command(cmd_name, value = contact_fields, val_type = "json", order = order))
-            if missing_fields:
-                user_data.state = "fill_required"
-                order += 1
-                msg = await self.generate_missing_field_message(text, missing_fields)
-                extend_commands.append(self.gen_voice_play_command(msg, order, user_data.language))
-                user_data.last_answer = msg
-                # else:
+            user_data, extend_commands = await self.check_info_ask_for_extra_info(text, user_data, cmd_name, contact_fields, order)
+            # contact_fields = load_preprocess_json(contact_fields)
+            # user_data.history_data["contact_fields"] = contact_fields
+            # missing_fields = self.check_required_filled(contact_fields, required_fields)
+            # print("Missed", missing_fields)
+            # # add check for same json structure !!!
+            # order += 1
+            # extend_commands.append(self.gen_general_command(cmd_name, value = contact_fields, val_type = "json", order = order))
+            # if missing_fields:
+            #     user_data.state = "fill_required"
+            #     order += 1
+            #     msg = await self.generate_missing_field_message(text, missing_fields)
+            #     extend_commands.append(self.gen_voice_play_command(msg, order, user_data.language))
+            #     user_data.last_answer = msg
+            #     # else:
             
         return {"commands": extend_commands, "contact_fields": contact_fields, "order": order, "is_give_list": is_give_list, "answer": msg}, user_data
+
 
     async def fill_in_interests(self, text: str, payload, user_data: UserData, request_type: str, order = 0):
         extend_commands = []
@@ -196,7 +197,6 @@ class VoiceBot:
                 {"role": "user", "content": get_folow_ups_prompt(text)}
             ]
         res = await self.openai_client.generate_response(messages)
-        print(22222222)
         print("Add follow ups", res)
         res = load_preprocess_json(res)
         return res
@@ -231,6 +231,22 @@ class VoiceBot:
         summery = await self.openai_client.generate_response(messages)
         return summery
 
+    async def check_info_ask_for_extra_info(self, text, user_data, cmd_name, contact_fields, order = 0):
+        extend_commands = []
+        contact_fields = load_preprocess_json(contact_fields)
+        user_data.history_data["contact_fields"] = contact_fields
+        missing_fields = self.check_required_filled(contact_fields, required_fields)
+        print("Missed", missing_fields)
+        # add check for same json structure !!!
+        order += 1
+        extend_commands.append(self.gen_general_command(cmd_name, value = contact_fields, val_type = "json", order = order))
+        if missing_fields:
+            user_data.state = "fill_required"
+            order += 1
+            msg = await self.generate_missing_field_message(text, missing_fields)
+            extend_commands.append(self.gen_voice_play_command(msg, order, user_data.language))
+            user_data.last_answer = msg
+        return user_data, extend_commands
 
     def check_required_filled(self, full_form: dict, req_fields: list) -> list :
         missing_fields = []

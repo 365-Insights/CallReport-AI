@@ -18,9 +18,9 @@ Provide no explanations or additional text, only the name of the selected catego
 def get_classification_prompt(user_msg, bot_answer, last_msg):
     classification_prompt = f"""Classify the current user message into one of the predefined categories below. Use the descriptions provided for each category to make an informed decision:    
   
-- **Create contact**: The user explicitly or implicitly requests to create a new contact. This includes scenarios where the user provides a name, phone number, email address, or other contact details but does not indicate an update to an existing contact.    
+- **Create contact**: The user explicitly requests to create a new contact.   
   
-- **Create report**: The user requests to generate or create a report. This could involve asking for summaries, data analysis, or specific insights to be compiled into a report.    
+- **Create report**: The user requests to generate or create a report.  
   
 - **Fill interests**: The user mentions interests or preferences that should be recorded or updated, such as hobbies, likes, or areas of focus.    
   
