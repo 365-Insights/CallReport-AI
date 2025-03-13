@@ -16,35 +16,70 @@ classification_system_prompt = """Your task is to analyze the current user messa
   
 Provide no explanations or additional text, only the name of the selected category.  """
 def get_classification_prompt(user_msg, bot_answer, last_msg):
-    classification_prompt = f"""Classify the current user message into one of the predefined categories:    
-- Create contact    
-- Create report    
-- Fill interests    
-- Update contact info    
-- Add follow-ups    
-- Cancel    
-- Save    
-- None    
+    classification_prompt = f"""Classify the current user message into one of the predefined categories below. Use the descriptions provided for each category to make an informed decision:    
+  
+- **Create contact**: The user explicitly or implicitly requests to create a new contact. This includes scenarios where the user provides a name, phone number, email address, or other contact details but does not indicate an update to an existing contact.    
+  
+- **Create report**: The user requests to generate or create a report. This could involve asking for summaries, data analysis, or specific insights to be compiled into a report.    
+  
+- **Fill interests**: The user mentions interests or preferences that should be recorded or updated, such as hobbies, likes, or areas of focus.    
+  
+- **Update contact info**: The user provides contact information (e.g., phone number, email, address) that belongs to an existing contact. If the intent is not to create a new contact but rather to modify or update existing details, classify it here.    
+  
+- **Add follow-ups**: The user indicates a need to create tasks, reminders, or action items to be followed up on in the future. These could involve scheduling a call, setting a meeting, or assigning a task.    
+  
+- **Cancel**: The user wants to cancel an action, task, or operation. This includes explicit requests to stop, abort, or discontinue a process.    
+  
+- **Save**: The user explicitly asks to save something, such as progress, settings, or changes they’ve made.    
+
+- **None**: The user’s message does not match any of the above categories or is unclear in intent. Use this category if the message is ambiguous or unrelated to any predefined action.    
   
 Use the following context to make your decision:    
 - Last bot response: '{bot_answer}'    
-- Last user message: '{last_msg}'
+- Last user message: '{last_msg}'    
   
-Always return **exactly one category**. If the current user message is unclear or does not match any category, return "None." Provide no additional text or explanation, only the name of the selected category.  
+**Rules:**    
+1. Always return **exactly one category** from the list above.    
+2. If the current user message is unclear or does not match any category, return "None."    
+3. Provide no additional text or explanation—only the name of the selected category.    
   
 Current user message: '{user_msg}'"""
     return classification_prompt
 
+
 system_flollow_ups = """You are a highly accurate and efficient assistant designed to extract specific information from transcribed text. Your task is to extract the following data obtained using the Speech-to-Text service, check the spelling, and consider that it may be a dialogue."""
-extract_follow_ups = """ Return only a JSON object with all attributes in the exact format specified below, without any additional text or modifications: 
-{
-"type": "",
-"notes": "",
- "responsibleUser": ""
-}.
-Do not include any explanations, return only the JSON object, and do not exclude attributes from the JSON even if they are empty, this is important.
-[USER TEXT]:
-"""
+def get_folow_ups_prompt(user_text: str):
+    print(user_text)
+    extract_follow_ups = f'''Extract follow-ups details from the provided user text and return them in the exact JSON format specified below. Follow these rules strictly:    
+1. The content of each attribute should be inferred and filled appropriately by the model based on the user text:    
+   - `notes`: This represents the content or description of the follow-up, such as a task to complete, a call to make, or a meeting to schedule.    
+   - `responsibleUser`: The person who is responsible for completing the follow-up.    
+   - `datetime`: The specific date or time when the follow-up should be completed.    
+2. The `type` attribute must be one of the following options: ["task", "call", "meeting"].    
+3. If specific details for an attribute are not explicitly mentioned in the user text, leave that attribute empty.    
+4. Always include all attributes in the JSON object, even if they are empty.    
+5. Do not include any additional text, explanations, or comments outside of the JSON object.    
+  
+JSON format for multiple follow-ups:    
+[
+{{    
+  "type": "",    
+  "notes": "",    
+  "responsibleUser": "",    
+  "datetime": ""    
+}}, 
+{{    
+  "type": "",    
+  "notes": "",    
+  "responsibleUser": "",    
+  "datetime": ""    
+}}
+] 
+  
+Input: [USER TEXT] - {user_text}    
+Output: Return only the JSON object, strictly adhering to the format above.    '''
+    print(333)
+    return extract_follow_ups
 
 
 def get_extract_interests_prompt(user_message, available_interests):

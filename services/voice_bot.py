@@ -100,10 +100,10 @@ class VoiceBot:
         elif msg_type == "Cancel":
             order += 1
             commands.append(self.gen_general_command("Cancel", order = order))
-        elif msg_type == "Save document":
+        elif msg_type == "Save":
             order += 1
             commands.append(self.gen_general_command("saveCurrentDocument", order = order))
-        elif msg_type == "Add follow ups":
+        elif msg_type == "Add follow-ups":
             follow_apps = await self.extract_follow_ups(text)
             commands.append(self.gen_general_command("addFollowUps", follow_apps, "list", order))
         
@@ -193,9 +193,10 @@ class VoiceBot:
     async def extract_follow_ups(self, text: str):
         messages = [
                 {"role": "system", "content": system_flollow_ups},
-                {"role": "user", "content": extract_follow_ups + text}
+                {"role": "user", "content": get_folow_ups_prompt(text)}
             ]
         res = await self.openai_client.generate_response(messages)
+        print(22222222)
         print("Add follow ups", res)
         res = load_preprocess_json(res)
         return res
