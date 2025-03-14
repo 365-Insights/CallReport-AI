@@ -97,7 +97,7 @@ def convert_base64_audio_to_wav(base64_audio_data, output_filename):
         return None  
 
 def load_preprocess_json(text: str):  
-    print("Begginging", text)
+    # print("Begginging", text)
     # Step 1: Remove outer quotes if present  
     if text.startswith('"') and text.endswith('"'):  
         text = text[1:-1]  
@@ -106,7 +106,7 @@ def load_preprocess_json(text: str):
     text = text.replace('\\"', '"').replace('\\\\', '\\')  
     # text = str(text).strip("'<>()\\ \"").replace('\'', '\"')
     text = text.replace("\'", "\"")
-    print("END", text)
+    # print("END", text)
     # Step 3: Attempt to parse the cleaned JSON string  
     try:  
         parsed = json.loads(text)  

@@ -35,7 +35,7 @@ class VoiceBot:
                 print("USER TEXT: ", user_text)
             except Exception as e:  
                 raise RuntimeError(f"Audio processing failed: {str(e)}")  
-            msg_type = await self.classify_user_message(user_text, last_message, last_answer)  
+            msg_type = await self.classify_user_message(user_text, user_data.chat_history)  
         elif request_type in ["listInterests", "listContactFields"]:  
             payload = load_preprocess_json(payload)
             user_text = last_message  
@@ -44,26 +44,30 @@ class VoiceBot:
             raise ValueError(f"Unsupported request_type: {request_type}")  
         print(f"Classification: {msg_type} | with user text - {user_text}") 
         not_in_call_report =  not callreportID or callreportID.lower() == "null" or callreportID.lower() == "none"
-        # async with asyncio.TaskGroup() as tg:
-        #     accompany_text = tg.create_task(
-        #         self.generate_accompany_message(user_text, msg_type))
+        async with asyncio.TaskGroup() as tg:
+            suggestion_task = tg.create_task( 
+                self.generate_accompany_message(user_text, msg_type, user_data.chat_history))
 
-        #     commands, user_state  = tg.create_task(
-        #         self.generate_answer(user_text, msg_type, request_type, payload, user_data, not_in_call_report)
-        #     )
-        # if not self.check_for_voice_command(commands):
-        #     print("Don't have voice command so add accompany text")
-        #     accompany_audio = self.gen_voice_play_command(accompany_text, commands[-1]["order"], user_data.language)
-        #     commands.append(accompany_audio)
-        commands, user_state = await self.generate_answer(user_text, msg_type, request_type, payload, user_data, not_in_call_report)
+            main_task  = tg.create_task(
+                self.generate_answer(user_text, msg_type, request_type, payload, user_data, not_in_call_report)
+            )
+        commands, user_state = main_task.result()
+        accompany_text = suggestion_task.result()
+
+        if not self.check_for_voice_command(commands):
+            print("Don't have voice command so add accompany text")
+            accompany_audio = self.gen_voice_play_command(accompany_text, commands[-1]["order"]+1, user_data.language)
+            commands.append(accompany_audio)
+        # commands, user_state = await self.generate_answer(user_text, msg_type, request_type, payload, user_data, not_in_call_report)
         user_state.last_message = user_text 
         self.users_states[session_id] = user_state
         response = self.form_response(commands, session_id)
         return response
     
-    async def generate_accompany_message(self, user_msg: str, category: str, ):
+    async def generate_accompany_message(self, user_msg: str, category: str, chat_history):
+        category = category.replace("report", "contact")
         messages = [
-                {"role": "user", "content": get_accompany_prompt(user_msg, category)}
+                {"role": "user", "content": get_suggestion_prompt(user_msg, category, chat_history)}
             ]
         text = await self.openai_client.generate_response(messages)
         return text
@@ -71,7 +75,7 @@ class VoiceBot:
 
     def check_for_voice_command(self, commands: list):
         for command in commands:
-            if command["name"] == 'playBotVoice':
+            if command["name"] == 'playBotVoice' or command["name"] == "giveListContactFilds" or command["name"] == "giveListInterests":
                 return True
         return False
 
@@ -108,7 +112,7 @@ class VoiceBot:
             commands.append(self.gen_voice_play_command(answer, order, user_state.language))
         elif not_in_call_report:
             print("Can't do this not inside call report with classification: ", msg_type)
-            answer = await self.generate_not_in_callreport_answer(text)
+            answer = await self.generate_not_in_callreport_answer(text, lang = user_state.language)
             user_state.last_answer = answer
             order += 1
             commands.append(self.gen_voice_play_command(answer, order, user_state.language))
@@ -190,10 +194,10 @@ class VoiceBot:
         return {"commands": extend_commands, "interests": interests, "order": order}
     
 
-    async def classify_user_message(self, message: str, last_message: str = None, last_answer: str = None):
+    async def classify_user_message(self, message: str, chat_history):
         messages = [
                 {"role": "system", "content": classification_system_prompt},
-                {"role": "user", "content": get_classification_prompt(message, last_answer, last_message) + message + "'"}
+                {"role": "user", "content": get_classification_prompt(message, chat_history) + message + "'"}
             ]
         res = await self.openai_client.generate_response(messages)
         return res
@@ -311,7 +315,7 @@ class VoiceBot:
         return message
     
 
-    async def generate_not_in_callreport_answer(self, user_msg: str):
+    async def generate_not_in_callreport_answer(self, user_msg: str, lang: str = "de-DE"):
         prompt = get_prompt_not_in_call_report(user_msg)
         messages = [
                 {"role": "user", "content": prompt}

@@ -1,7 +1,16 @@
 import json
 from datetime import datetime
 
+
+
+def get_formatted_history(chat_history) -> str:
+    formatted_history = "\n".join(  
+        [f"User: {entry['user_msg']}\nBot: {entry['bot_answer']}" for entry in chat_history]  
+    )  
+    return formatted_history
 extract_form_system_prompt = "You are a highly accurate and efficient assistant designed to extract specific information from transcribed text. Your task is to extract the following data obtained using the Speech-to-Text service, check the spelling, and consider that it may be a dialogue. Correct first names if they appear unusual or incorrect."
+
+
 
 # default_fields = '''"GeneralInformation": {"Gender": "", "FirstName": "", "LastName": ""},"BusinessInformation": {"Company": "", "City": "", "Country": "", "Street": "", "HouseNumber": "", "PostalCode": "", "AdditionalInformationAddress": "", "PositionLevel": "", "Department": "", "JobTitle": "", "Industry": "", "EducationLevel": "", "PhoneNumber": "", "MobilePhoneNumber": "", "BusinessEmail": ""}, "PersonalInformation": { "City": "", "Country": "", "Street": "", "HouseNumber": "", "PostalCode": "", "AdditionalInfoAddress": "", "PhoneNumber": "", "MobilePhoneNumber": "", "PersonalEMail": "" }'''
 def prompt_fill_form_fields(fields):
@@ -15,7 +24,9 @@ Do not include any explanations, return only the JSON object, and do not exclude
 classification_system_prompt = """Your task is to analyze the current user message in the context of the conversation, which includes the **last bot response** and the **previous user message**. Based on this context, determine the most appropriate category from the list above. Always return **exactly one category** from the list, even if the message appears ambiguous. If the current user message does not clearly fit any of the categories, return "None."   
   
 Provide no explanations or additional text, only the name of the selected category.  """
-def get_classification_prompt(user_msg, bot_answer, last_msg):
+def get_classification_prompt(user_msg, chat_history):
+    formatted_history = get_formatted_history(chat_history)
+    ### Chat History:  
     classification_prompt = f"""Classify the current user message into one of the predefined categories below. Use the descriptions provided for each category to make an informed decision:    
   
 - **Create contact**: The user explicitly requests to create a new contact.   
@@ -35,8 +46,8 @@ def get_classification_prompt(user_msg, bot_answer, last_msg):
 - **None**: The user’s message does not match any of the above categories or is unclear in intent. Use this category if the message is ambiguous or unrelated to any predefined action.    
   
 Use the following context to make your decision:    
-- Last bot response: '{bot_answer}'    
-- Last user message: '{last_msg}'    
+### Chat History:  
+{formatted_history}  
   
 **Rules:**    
 1. Always return **exactly one category** from the list above.    
@@ -185,39 +196,39 @@ Generate a polite, user-friendly error message to notify the user that an issue 
 5. "Something went wrong on our end. Please try again, and let us know if the issue persists."  
 """  
 
-def get_accompany_prompt(user_message: str, category: str) -> str:  
+def get_suggestion_prompt(user_message: str, category: str, chat_history: list) -> str:  
+    # Format the chat history into a readable string for the prompt  
+    
+    formatted_history = get_formatted_history(chat_history)
     prompt = f"""  
-You are an intelligent and polite assistant. Your task is to generate a brief, friendly confirmation message for the user based on their input and the specified category of the task.   
+You are a helpful and proactive assistant. Your task is to provide a useful suggestion to the user based on their message, the specified task category, and the full chat history. Each category has a unique purpose, and your suggestion should guide the user toward completing the task effectively or improving the outcome.  
   
 ### Instructions:  
-1. Analyze the user's message and the category provided.  
-2. Generate a short, polite response confirming the task has been completed.   
-3. Tailor the response to match the category and maintain a conversational tone.  
-4. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.
-
+1. Understand the user's message, the task category, and the context provided by the chat history.  
+2. Use the chat history to avoid repeating previous bot responses unnecessarily. If a suggestion or confirmation has already been provided, generate a new response that adds value or addresses a different aspect of the task.  
+3. If the category is **Cancel**, simply confirm the action has been canceled without recommending further steps. Use varied phrasing to keep the response engaging.  
+4. Ensure your tone is friendly, encouraging, and action-oriented.  
+5. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.  
+6. When answering, follow the language of the user message exactly. For example, if a question is asked in English, the entire answer will be in English; if in German, answer should be in German. Do not change the language unless the user asks for it. If you can't detect the language, answer in German.  
   
-### Categories:  
-- Create contact  
-- Create a report  
-- Fill interests  
-- Update contact info  
-- Add follow-ups  
-- Cancel  
-- Save document  
+### Chat History:  
+{formatted_history}  
   
-### User Message:  
+### Current User Message:  
 {user_message}  
   
 ### Category:  
 {category}  
   
-### Output:  
-Your response should be a single sentence that acknowledges the task and provides reassurance or a positive tone. For example:  
-- "Sure, I've created the contact for you!"  
-- "The report has been successfully generated."  
-- "Your follow-up has been added. Let me know if there's anything else."  
-- "No problem, the document has been saved."  
+### Categories and Suggestions:  
+- **Create contact**: Suggest adding more details about the contact, such as their name, email, phone number, or any other relevant information.  
+- **Fill interests**: Suggest the user review the recorded interests to ensure they are complete or ask them to mention any missing ones that should be added.  
+- **Update contact info**: Recommend the user double-check the updated details for accuracy or suggest adding any missing fields that could be relevant.  
+- **Add follow-ups**: Propose that the user add more follow-ups if needed, or suggest related actions like filling in interests or ensuring all details are correct for the follow-up tasks.  
+- **Cancel**: Confirm the cancellation with a friendly and varied response, like: "Sure, the action has been canceled." Use alternate phrasing to keep the response fresh.  
+- **Save document**: Reassure the user that their document has been saved and suggest reviewing the saved content to ensure everything is accurate.  
+
   
-Now, generate the confirmation message:  
+Now, generate a suggestion for the user:  
 """  
     return prompt  
