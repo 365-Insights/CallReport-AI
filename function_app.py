@@ -35,15 +35,20 @@ async def main(req: func.HttpRequest) -> func.HttpResponse:
         callreportID = req_body.get("callreportID")
         value = req_body.get('value')
         language = req_body.get("language")
-        response = await voice_bot.process_user_message(language, req_type, sessionID, callreportID, value)
-        # test = {"tets": 123, "test": 23}
+        try:
+            response = await voice_bot.process_user_message(language, req_type, sessionID, callreportID, value)
+            # test = {"tets": 123, "test": 23}
+        except Exception:
+            print("Encountered an exception")
+            print(traceback.format_exc())
+            response = await voice_bot.form_error_resonse(sessionID)
         return func.HttpResponse(json.dumps(response), mimetype="application/json")
 
     except Exception:
-        print("Encountered an exception")
+        print("Invalid input")
         print(traceback.format_exc())
         return func.HttpResponse(
-            "Processing Error",
+            "Invalid Input",
             status_code=400
         )
     

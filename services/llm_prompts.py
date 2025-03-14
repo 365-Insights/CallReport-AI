@@ -121,7 +121,8 @@ def get_missing_fields_prompt(user_message: str, missing_fields: list):
     2. Clearly list the missing fields in a user-friendly format (e.g., as a bulleted list or a comma-separated list).  
     3. Politely ask the user to provide the missing information.  
     4. Maintain a conversational, approachable, and polite tone throughout. 
-    5. Don't use formatting for text for example **word** 
+    5. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.
+    6. When answering, follow the language of the user message exactly. For example, if a question is asked in English, the entire answer will be in English; if in German, translate all content to German. Do not change the language unless the user asks for it. If you can't detect language answer in German.
     Your output should be concise, polite, and friendly. Here's the user's message and the missing fields:  
     User message: "{user_message}"  
     Missing fields: {missing_fields}  
@@ -133,7 +134,7 @@ def get_missing_fields_prompt(user_message: str, missing_fields: list):
 
 def get_general_answer_prompt(user_message):
     prompt = f"""The user hasn’t indicated a specific action or request. Respond in a friendly and engaging way, letting them know what you can assist with. Use the following categories to explain your capabilities:    
-  
+
 - Create contact    
 - Create a report    
 - Fill interests    
@@ -141,7 +142,8 @@ def get_general_answer_prompt(user_message):
 - Add follow-ups    
 - Cancel    
 - Save document    
-
+When answering, follow the language of the user message exactly. For example, if a question is asked in English, the entire answer will be in English; if in German, translate all content to German. Do not change the language unless the user asks for it. If you can't detect language answer in German.
+Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.
 Your tone should be polite, encouraging, and professional. Make the user feel welcome to ask for help if they need it. Keep your response brief and friendly.    
   
 User Message: '{user_message}'  """
@@ -150,8 +152,72 @@ User Message: '{user_message}'  """
 
 def get_prompt_not_in_call_report(user_msg: str):
     prompt = f"""The user has requested an action, but before proceeding with their request, they need to create a call report or open an existing one. Generate a polite and friendly response to inform the user of this requirement. Make sure the tone is supportive and encouraging, and clearly explain that creating or opening a call report is necessary before continuing.  
-    
+    Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.
+    When answering, follow the language of the user message exactly. For example, if a question is asked in English, the entire answer will be in English; if in German, translate all content to German. Do not change the language unless the user asks for it. If you can't detect language answer in German.
     If appropriate, offer guidance on how they can create or open a call report, or let them know you’re available to assist with this step.    
     
     User Message: "{user_msg}"  """
     return prompt
+
+
+
+prompt_error_occured = """  
+Generate a polite, user-friendly error message to notify the user that an issue has occurred while processing their request. The message should acknowledge the failure, reassure the user, and encourage them to try again. Avoid technical jargon and maintain a tone that is friendly, empathetic, and professional.  
+  
+### Steps:  
+1. Politely acknowledge that an issue has occurred.  
+2. Briefly inform the user that their request could not be completed due to the error.  
+3. Reassure the user that the issue is likely temporary or fixable.  
+4. Encourage the user to try their request again.  
+5. Optionally offer help or suggest contacting support if the issue persists.  
+6. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.
+7. Response should be in german.
+  
+### Output Format:  
+- Tone: Friendly, polite, and supportive.  
+- Length: 1–2 sentences.  
+  
+### Examples:  
+1. "Oops! Something went wrong while processing your request. Please try again in a moment."  
+2. "We're sorry, but we encountered an issue while handling your request. Please try again shortly."  
+3. "Uh-oh, it looks like something went wrong. Don’t worry—please give it another shot!"  
+4. "Apologies! We hit a small snag while processing your request. Please try again, and thank you for your patience."  
+5. "Something went wrong on our end. Please try again, and let us know if the issue persists."  
+"""  
+
+def get_accompany_prompt(user_message: str, category: str) -> str:  
+    prompt = f"""  
+You are an intelligent and polite assistant. Your task is to generate a brief, friendly confirmation message for the user based on their input and the specified category of the task.   
+  
+### Instructions:  
+1. Analyze the user's message and the category provided.  
+2. Generate a short, polite response confirming the task has been completed.   
+3. Tailor the response to match the category and maintain a conversational tone.  
+4. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.
+
+  
+### Categories:  
+- Create contact  
+- Create a report  
+- Fill interests  
+- Update contact info  
+- Add follow-ups  
+- Cancel  
+- Save document  
+  
+### User Message:  
+{user_message}  
+  
+### Category:  
+{category}  
+  
+### Output:  
+Your response should be a single sentence that acknowledges the task and provides reassurance or a positive tone. For example:  
+- "Sure, I've created the contact for you!"  
+- "The report has been successfully generated."  
+- "Your follow-up has been added. Let me know if there's anything else."  
+- "No problem, the document has been saved."  
+  
+Now, generate the confirmation message:  
+"""  
+    return prompt  

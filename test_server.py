@@ -53,8 +53,13 @@ async def process_request(payload: RequestPayload):
         # new_path = convert_base64_webm_to_wav(value, "test.wav")
         # print(new_path)
         # Process the user message using VoiceBot  
-        response = await voice_bot.process_user_message(language, req_type, sessionID, callreportID, value)  
-  
+        try:
+            response = await voice_bot.process_user_message(language, req_type, sessionID, callreportID, value)
+            # test = {"tets": 123, "test": 23}
+        except Exception:
+            print("Encountered an exception")
+            print(traceback.format_exc())
+            response = await voice_bot.form_error_resonse(sessionID)
         # Example test response (can be replaced with the actual response)  
   
         # Return the processed response as JSON  

@@ -5,7 +5,7 @@ from .llm_prompts import *
 from utils import convert_base64_audio_to_wav, lang2voice, load_preprocess_json
 from uuid import uuid4
 from .user_state import UserData
-
+import asyncio
 
 default_fields = {"GeneralInformation": {"Gender": "", "FirstName": "", "LastName": ""},"BusinessInformation": {"Company": "", "City": "", "Country": "", "Street": "", "HouseNumber": "", "PostalCode": "", "AdditionalInformationAddress": "", "PositionLevel": "", "Department": "", "JobTitle": "", "Industry": "", "EducationLevel": "", "PhoneNumber": "", "MobilePhoneNumber": "", "BusinessEmail": ""}, "PersonalInformation": { "City": "", "Country": "", "Street": "", "HouseNumber": "", "PostalCode": "", "AdditionalInfoAddress": "", "PhoneNumber": "", "MobilePhoneNumber": "", "PersonalEMail": "" }}
 required_fields = ["FirstName", "LastName", "Company", "BusinessEmail"]
@@ -17,9 +17,7 @@ class VoiceBot:
 
 
     async def process_user_message(self, lang: str = "de-DE", request_type: str = "", session_id: str = None, callreportID: str = None, payload = {}):
-        file_id = uuid4()
-        print(file_id)
-        
+        file_id = uuid4()        
         # if session_id:
         user_data = self.users_states.get(session_id)
         if not user_data:
@@ -46,14 +44,47 @@ class VoiceBot:
             raise ValueError(f"Unsupported request_type: {request_type}")  
         print(f"Classification: {msg_type} | with user text - {user_text}") 
         not_in_call_report =  not callreportID or callreportID.lower() == "null" or callreportID.lower() == "none"
-        commands, user_state = await self.generate_answer(user_text, msg_type, request_type, payload, user_data, not_in_call_report)
+        # async with asyncio.TaskGroup() as tg:
+        #     accompany_text = tg.create_task(
+        #         self.generate_accompany_message(user_text, msg_type))
 
+        #     commands, user_state  = tg.create_task(
+        #         self.generate_answer(user_text, msg_type, request_type, payload, user_data, not_in_call_report)
+        #     )
+        # if not self.check_for_voice_command(commands):
+        #     print("Don't have voice command so add accompany text")
+        #     accompany_audio = self.gen_voice_play_command(accompany_text, commands[-1]["order"], user_data.language)
+        #     commands.append(accompany_audio)
+        commands, user_state = await self.generate_answer(user_text, msg_type, request_type, payload, user_data, not_in_call_report)
         user_state.last_message = user_text 
         self.users_states[session_id] = user_state
         response = self.form_response(commands, session_id)
         return response
-        
-        
+    
+    async def generate_accompany_message(self, user_msg: str, category: str, ):
+        messages = [
+                {"role": "user", "content": get_accompany_prompt(user_msg, category)}
+            ]
+        text = await self.openai_client.generate_response(messages)
+        return text
+    
+
+    def check_for_voice_command(self, commands: list):
+        for command in commands:
+            if command["name"] == 'playBotVoice':
+                return True
+        return False
+
+
+    async def form_error_resonse(self, session_id):
+        messages = [
+                {"role": "user", "content": prompt_error_occured}
+            ]
+        text = await self.openai_client.generate_response(messages)
+        commands = [self.gen_voice_play_command(text, 1, "de-DE")]
+        return self.form_response(commands, session_id)
+
+
     def form_response(self, commands: list, session_id: str = None) -> dict:
         return {
             "commands": commands,
@@ -136,20 +167,6 @@ class VoiceBot:
                 cmd_name = "createContact"
                 contact_fields = await self.extract_info_from_text(text, payload)
             user_data, extend_commands = await self.check_info_ask_for_extra_info(text, user_data, cmd_name, contact_fields, order)
-            # contact_fields = load_preprocess_json(contact_fields)
-            # user_data.history_data["contact_fields"] = contact_fields
-            # missing_fields = self.check_required_filled(contact_fields, required_fields)
-            # print("Missed", missing_fields)
-            # # add check for same json structure !!!
-            # order += 1
-            # extend_commands.append(self.gen_general_command(cmd_name, value = contact_fields, val_type = "json", order = order))
-            # if missing_fields:
-            #     user_data.state = "fill_required"
-            #     order += 1
-            #     msg = await self.generate_missing_field_message(text, missing_fields)
-            #     extend_commands.append(self.gen_voice_play_command(msg, order, user_data.language))
-            #     user_data.last_answer = msg
-            #     # else:
             
         return {"commands": extend_commands, "contact_fields": contact_fields, "order": order, "is_give_list": is_give_list, "answer": msg}, user_data
 
