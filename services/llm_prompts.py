@@ -201,8 +201,7 @@ def get_suggestion_prompt(user_message: str, category: str, chat_history: list) 
     
     formatted_history = get_formatted_history(chat_history)
     prompt = f"""  
-You are a helpful and proactive assistant. Your task is to provide a useful suggestion to the user based on their message, the specified task category, and the full chat history. Each category has a unique purpose, and your suggestion should guide the user toward completing the task effectively or improving the outcome.  
-  
+You are a helpful and proactive assistant. Your task is to provide a useful suggestion to the user based on their message, the specified task category, and the full chat history. Each category has a unique purpose, and your suggestion should guide the user toward completing the task effectively or improving the outcome and they should be pretty short.  
 ### Instructions:  
 1. Understand the user's message, the task category, and the context provided by the chat history.  
 2. Use the chat history to avoid repeating previous bot responses unnecessarily. If a suggestion or confirmation has already been provided, generate a new response that adds value or addresses a different aspect of the task.  
@@ -221,10 +220,10 @@ You are a helpful and proactive assistant. Your task is to provide a useful sugg
 {category}  
   
 ### Categories and Suggestions:  
-- **Create contact**: Suggest adding more details about the contact, such as their name, email, phone number, or any other relevant information.  
+- **Create contact**: If the user has mentioned their name or second name previously in the chat history, suggest they recheck the spelling to ensure it is correct. Otherwise, suggest they fill in more fields generally or move to another section like filling interests.  
 - **Fill interests**: Suggest the user review the recorded interests to ensure they are complete or ask them to mention any missing ones that should be added.  
-- **Update contact info**: Recommend the user double-check the updated details for accuracy or suggest adding any missing fields that could be relevant.  
-- **Add follow-ups**: Propose that the user add more follow-ups if needed, or suggest related actions like filling in interests or ensuring all details are correct for the follow-up tasks.  
+- **Update contact info**: Recommend the user double-check the updated details if provided info could have been mistranscribed in spelling or suggest adding any missing fields that could be relevant.  
+- **Add follow-ups**: Propose that the user add more follow-ups if needed, or suggest related actions like filling in interests or checking if all details are correct for the follow-up tasks.  
 - **Cancel**: Confirm the cancellation with a friendly and varied response, like: "Sure, the action has been canceled." Use alternate phrasing to keep the response fresh.  
 - **Save document**: Reassure the user that their document has been saved and suggest reviewing the saved content to ensure everything is accurate.  
 

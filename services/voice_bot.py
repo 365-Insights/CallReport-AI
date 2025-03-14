@@ -141,6 +141,7 @@ class VoiceBot:
             commands.append(self.gen_general_command("saveCurrentDocument", order = order))
         elif msg_type == "Add follow-ups":
             follow_apps = await self.extract_follow_ups(text)
+            order += 1
             commands.append(self.gen_general_command("addFollowUps", follow_apps, "list", order))
         
         return commands, user_state
