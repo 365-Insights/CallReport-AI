@@ -35,7 +35,7 @@ def get_classification_prompt(user_msg, chat_history):
   
 - **Fill interests**: The user mentions interests or preferences that should be recorded or updated, such as hobbies, likes, or areas of focus.    
   
-- **Update contact info**: The user provides some information. If the intent is not to create a new contact but rather to modify or update existing details, classify it here.    
+- **Update contact info**: The user provides some information. If the intent is not to create a new contact but rather to modify or update existing details or fill in some contact information, classify it here. 
   
 - **Add follow-ups**: The user indicates a need to create tasks, reminders, or action items to be followed up on in the future. These could involve scheduling a call, setting a meeting, or assigning a task.    
   
@@ -133,7 +133,7 @@ def get_missing_fields_prompt(user_message: str, missing_fields: list):
     3. Politely ask the user to provide the missing information.  
     4. Maintain a conversational, approachable, and polite tone throughout. 
     5. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.
-    6. When answering, follow the language of the user message exactly. For example, if a question is asked in English, the entire answer will be in English; if in German, translate all content to German. Do not change the language unless the user asks for it. If you can't detect language answer in German.
+    6. When responding to a user's message, always reply in the same language as the message you receive. For example, if the message is in English, reply in English; if the message is in German, reply in German. Do not switch languages unless explicitly requested by the user. If the language of the message cannot be determined, default to responding in German. Ensure the entire response remains consistent with the language of the original message.
     Your output should be concise, polite, and friendly. Here's the user's message and the missing fields:  
     User message: "{user_message}"  
     Missing fields: {missing_fields}  
@@ -153,9 +153,10 @@ def get_general_answer_prompt(user_message):
 - Add follow-ups    
 - Cancel    
 - Save document    
-When answering, follow the language of the user message exactly. For example, if a question is asked in English, the entire answer will be in English; if in German, translate all content to German. Do not change the language unless the user asks for it. If you can't detect language answer in German.
-Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.
-Your tone should be polite, encouraging, and professional. Make the user feel welcome to ask for help if they need it. Keep your response brief and friendly.    
+RULES:
+1. When responding to a user's message, always reply in the same language as the message you receive. For example, if the message is in English, reply in English; if the message is in German, reply in German. Do not switch languages unless explicitly requested by the user. If the language of the message cannot be determined, default to responding in German. Ensure the entire response remains consistent with the language of the original message.
+2. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.
+3. Your tone should be polite, encouraging, and professional. Make the user feel welcome to ask for help if they need it. Keep your response brief and friendly.    
   
 User Message: '{user_message}'  """
     return prompt
@@ -163,9 +164,10 @@ User Message: '{user_message}'  """
 
 def get_prompt_not_in_call_report(user_msg: str):
     prompt = f"""The user has requested an action, but before proceeding with their request, they need to create a call report or open an existing one. Generate a polite and friendly response to inform the user of this requirement. Make sure the tone is supportive and encouraging, and clearly explain that creating or opening a call report is necessary before continuing.  
-    Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.
-    When answering, follow the language of the user message exactly. For example, if a question is asked in English, the entire answer will be in English; if in German, translate all content to German. Do not change the language unless the user asks for it. If you can't detect language answer in German.
-    If appropriate, offer guidance on how they can create or open a call report, or let them know you’re available to assist with this step.    
+    RULES:
+    1. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.
+    2. When responding to a user's message, always reply in the same language as the message you receive. For example, if the message is in English, reply in English; if the message is in German, reply in German. Do not switch languages unless explicitly requested by the user. If the language of the message cannot be determined, default to responding in German. Ensure the entire response remains consistent with the language of the original message.
+    3. If appropriate, offer guidance on how they can create or open a call report, or let them know you’re available to assist with this step.    
     
     User Message: "{user_msg}"  """
     return prompt
@@ -208,7 +210,7 @@ You are a helpful and proactive assistant. Your task is to provide a useful sugg
 3. If the category is **Cancel**, simply confirm the action has been canceled without recommending further steps. Use varied phrasing to keep the response engaging.  
 4. Ensure your tone is friendly, encouraging, and action-oriented.  
 5. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.  
-6. When answering, follow the language of the user message exactly. For example, if a question is asked in English, the entire answer will be in English; if in German, answer should be in German. Do not change the language unless the user asks for it. If you can't detect the language, answer in German.  
+6. When responding to a user's message, always reply in the same language as the message you receive. For example, if the message is in English, reply in English; if the message is in German, reply in German. Do not switch languages unless explicitly requested by the user. If the language of the message cannot be determined, default to responding in German. Ensure the entire response remains consistent with the language of the original message.  
   
 ### Chat History:  
 {formatted_history}  
