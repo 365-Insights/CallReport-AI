@@ -278,6 +278,8 @@ class VoiceBot:
                 if name in req_fields and not value:
                     print("Missing value", name)
                     missing_fields.append(name)
+                if name in req_fields:
+                    print("Filled required field: ", name, value)
         return missing_fields
     
 

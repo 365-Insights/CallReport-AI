@@ -120,27 +120,26 @@ Output:
 """
     return prompt
 
-
-def get_missing_fields_prompt(user_message: str, missing_fields: list):  
+def get_missing_fields_prompt(user_message: str, missing_fields: list):    
     prompt = f"""  
-    You are a friendly and intelligent assistant. Your task is to generate a polite, friendly, and clear message  
-    to ask the user to provide missing required fields. The missing fields are provided in the list below, and the  
-    user's message (if any) should be acknowledged politely.  
-
+    You are a friendly and intelligent assistant. Your task is to generate a polite, friendly, and clear message to ask the user for missing required information. The missing fields are provided in the list below, and the user's message (if any) should be acknowledged politely.  
+  
     Instructions:  
     1. If the user message is provided, briefly acknowledge it in a warm tone.  
-    2. Clearly list the missing fields in a user-friendly format (e.g., as a bulleted list or a comma-separated list).  
-    3. Politely ask the user to provide the missing information.  
-    4. Maintain a conversational, approachable, and polite tone throughout. 
-    5. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.
-    6. When responding to a user's message, always reply in the same language as the message you receive. For example, if the message is in English, reply in English; if the message is in German, reply in German. Do not switch languages unless explicitly requested by the user. If the language of the message cannot be determined, default to responding in German. Ensure the entire response remains consistent with the language of the original message.
+    2. Instead of listing the missing fields directly, ask for them individually in the form of polite questions. For example, instead of saying "The missing fields are: First name, Last name," ask "Could you please tell me your first name?" or "May I have your last name, please?"  
+    3. Politely ask the user to provide the requested information one by one, phrased as natural and conversational questions.  
+    4. Maintain a conversational, approachable, and polite tone throughout.  
+    5. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.  
+    6. When responding to a user's message, always reply in the same language as the message you receive. For example, if the message is in English, reply in English; if the message is in German, reply in German. Do not switch languages unless explicitly requested by the user. If the language of the message cannot be determined, default to responding in German. Ensure the entire response remains consistent with the language of the original message.  
+  
     Your output should be concise, polite, and friendly. Here's the user's message and the missing fields:  
+  
     User message: "{user_message}"  
     Missing fields: {missing_fields}  
   
     Output:  
     """  
-    return prompt  
+    return prompt    
 
 
 def get_general_answer_prompt(user_message):
