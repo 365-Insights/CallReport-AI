@@ -120,7 +120,8 @@ Output:
 """
     return prompt
 
-def get_missing_fields_prompt(user_message: str, missing_fields: list):    
+def get_missing_fields_prompt(user_message: str, missing_fields: list, is_saving: bool = False):  
+    # Base prompt  
     prompt = f"""  
     You are a friendly and intelligent assistant. Your task is to generate a polite, friendly, and clear message to ask the user for missing required information. The missing fields are provided in the list below, and the user's message (if any) should be acknowledged politely.  
   
@@ -131,15 +132,27 @@ def get_missing_fields_prompt(user_message: str, missing_fields: list):
     4. Maintain a conversational, approachable, and polite tone throughout.  
     5. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.  
     6. When responding to a user's message, always reply in the same language as the message you receive. For example, if the message is in English, reply in English; if the message is in German, reply in German. Do not switch languages unless explicitly requested by the user. If the language of the message cannot be determined, default to responding in German. Ensure the entire response remains consistent with the language of the original message.  
+    """  
   
-    Your output should be concise, polite, and friendly. Here's the user's message and the missing fields:  
+    # Add specific instructions if the `is_saving` flag is True  
+    if is_saving: 
+        print("can't save without all info") 
+        prompt += """  
+    Additional context:  
+    The user is trying to save a contact but hasn't provided all the necessary fields. Please inform the user that saving the contact is not possible without these fields, and kindly prompt them to provide the missing information.  
+    """  
+  
+    # Append the user's message and missing fields to the prompt  
+    prompt += f"""  
+    Here's the user's message and the missing fields:  
   
     User message: "{user_message}"  
     Missing fields: {missing_fields}  
   
     Output:  
     """  
-    return prompt    
+  
+    return prompt  
 
 
 def get_general_answer_prompt(user_message):

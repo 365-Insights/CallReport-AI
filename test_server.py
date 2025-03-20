@@ -35,7 +35,7 @@ class RequestPayload(BaseModel):
     sessionID: str  
     callreportID: str
     value: str  
-  
+    typeForm: str
   
 @app.post("/api/req")  
 async def process_request(payload: RequestPayload):  
@@ -49,12 +49,13 @@ async def process_request(payload: RequestPayload):
         callreportID = payload.callreportID
         value = payload.value  
         language = payload.language  
+        form_type = payload.typeForm 
         # print("VALUE", value)
         # new_path = convert_base64_webm_to_wav(value, "test.wav")
         # print(new_path)
         # Process the user message using VoiceBot  
         try:
-            response = await voice_bot.process_user_message(language, req_type, sessionID, callreportID, value)
+            response = await voice_bot.process_user_message(language, req_type, sessionID, callreportID, value, form_type)
             # test = {"tets": 123, "test": 23}
         except Exception:
             print("Encountered an exception")

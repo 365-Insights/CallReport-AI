@@ -35,8 +35,9 @@ async def main(req: func.HttpRequest) -> func.HttpResponse:
         callreportID = req_body.get("callreportID")
         value = req_body.get('value')
         language = req_body.get("language")
+        form_type = req_body.get("typeForm")
         try:
-            response = await voice_bot.process_user_message(language, req_type, sessionID, callreportID, value)
+            response = await voice_bot.process_user_message(language, req_type, sessionID, callreportID, value, form_type)
             # test = {"tets": 123, "test": 23}
         except Exception:
             print("Encountered an exception")
