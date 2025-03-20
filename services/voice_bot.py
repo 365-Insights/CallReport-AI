@@ -44,7 +44,7 @@ class VoiceBot:
             order = 1
             if msg_type == "Fill insterests": 
                 commands.append(self.gen_general_command("giveListInterests", order = order))
-            elif msg_type in ["Update contact info", "Create contact"] or (msg_type == "Save" and form_type == "contact"):    
+            elif msg_type in ["Update contact info", "Create contact", "Create report"] or (msg_type == "Save" and form_type == "contact"):    
                 commands.append(self.gen_general_command("giveListContactFilds", order = order))
             print("Givelist command")
             if commands:
