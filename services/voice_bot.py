@@ -270,6 +270,7 @@ class VoiceBot:
 
     async def check_info_ask_for_extra_info(self, text, user_data, cmd_name, contact_fields, required_fields, order = 0):
         extend_commands = []
+        print("Required fields: ", required_fields)
         if isinstance(required_fields[0], dict):
             required_fields = [i["Value"] for i in required_fields]
         if isinstance(contact_fields, str):

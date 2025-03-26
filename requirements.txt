@@ -10,6 +10,10 @@ openai
 pydub
 opencensus-ext-azure==1.1.13
 ffmpeg-python==0.2.0
+azureml  
+azure-ai-ml
+aiohttp
+
 # moviepy==1.0.3 
 # numpy>=1.18.1 
 # imageio>=2.5.0 
