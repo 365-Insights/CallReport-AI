@@ -39,6 +39,10 @@ def get_classification_prompt(user_msg, chat_history):
   
 - **Add follow-ups**: The user indicates a need to create tasks, reminders, or action items to be followed up on in the future. These could involve scheduling a call, setting a meeting, or assigning a task.    
   
+- **Find person information**: The user asks to fill information about himself with data from the Internet. This could be request like 'automically fill in my personal info'.
+
+- **Find company information**: The user asks to fill some company information using data from the Internet. This could be request like 'automically fill in my company info'.
+
 - **Cancel**: The user wants to cancel an action, task, or operation. This includes explicit requests to stop, abort, or discontinue a process.    
   
 - **Save**: The user explicitly asks to save something, such as progress, settings, or changes they’ve made.    
@@ -120,7 +124,7 @@ Output:
 """
     return prompt
 
-def get_missing_fields_prompt(user_message: str, missing_fields: list, is_saving: bool = False):  
+def get_missing_fields_prompt(user_message: str, missing_fields: list, is_saving: bool = False, is_search: bool = False):  
     # Base prompt  
     prompt = f"""  
     You are a friendly and intelligent assistant. Your task is to generate a polite, friendly, and clear message to ask the user for missing required information. The missing fields are provided in the list below, and the user's message (if any) should be acknowledged politely.  
@@ -141,7 +145,11 @@ def get_missing_fields_prompt(user_message: str, missing_fields: list, is_saving
     Additional context:  
     The user is trying to save a contact but hasn't provided all the necessary fields. Please inform the user that saving the contact is not possible without these fields, and kindly prompt them to provide the missing information.  
     """  
-  
+    if is_search: 
+        prompt += """  
+    Additional context:  
+    The user is asking bot to find additional information about him or his company, but we don't have all info for the search. Please inform the user that automatically filling form(searching for info) is not possible without these fields, and kindly prompt them to provide the missing information.  
+    """  
     # Append the user's message and missing fields to the prompt  
     prompt += f"""  
     Here's the user's message and the missing fields:  
@@ -240,8 +248,50 @@ You are a helpful and proactive assistant. Your task is to provide a useful sugg
 - **Add follow-ups**: Propose that the user add more follow-ups if needed, or suggest related actions like filling in interests or checking if all details are correct for the follow-up tasks.  
 - **Cancel**: Confirm the cancellation with a friendly and varied response, like: "Sure, the action has been canceled." Use alternate phrasing to keep the response fresh.  
 - **Save document**: Reassure the user that their document has been saved and suggest reviewing the saved content to ensure everything is accurate.  
-
+- **Find person information**: Suggest the user verify the accuracy of the information found about themselves by our bot and ask if there are any specific details they would like to update or add.  
+- **Find company information**: Recommend the user review the gathered company information by our bot for accuracy and completeness, and ask if there are additional details needed about the company. 
   
 Now, generate a suggestion for the user:  
 """  
+    return prompt 
+
+
+def prompt_fill_form_fields_internet(fields, internet_info_text):  
+    # Create the prompt with instructions for GPT to fill in the fields  
+    fields_no_required = json.dumps(fields, ensure_ascii=False)  
+    extract_form_internet_prompt = f"""  
+Given the following information text:  
+  
+"{internet_info_text}"  
+  
+Return only a JSON object with all attributes in the exact format specified below, without any additional text or modifications. 
+Prioritize existing values in the form if they are already filled.
+Do not include any explanations, return only the JSON object, and do not exclude attributes from the JSON even if they are empty. This is important.  
+  
+Form fields:  
+{fields_no_required}  
+""" 
+    return extract_form_internet_prompt 
+
+def get_prompt_no_info_found(user_msg: str):  
+    """  
+    Generates a polite and friendly response to inform the user that no information was found on the internet to automatically fill extra info in the form.  
+  
+    Parameters:  
+    - user_msg (str): The user's message.  
+  
+    Returns:  
+    - str: Formatted prompt for GPT.  
+    """  
+    prompt = f"""  
+    The user has requested to fill extra information in the form automatically. Generate a polite and friendly response to inform the user that, unfortunately, no information was found about them on the internet to fill in the extra info automatically. Encourage them to fill in the information manually.  
+  
+    RULES:  
+    1. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.  
+    2. When responding to a user's message, always reply in the same language as the message you receive. For example, if the message is in English, reply in English; if the message is in German, reply in German. Do not switch languages unless explicitly requested by the user. If the language of the message cannot be determined, default to responding in German. Ensure the entire response remains consistent with the language of the original message.  
+    3. If appropriate, offer guidance on how they can fill in the information manually, and let them know you’re available to assist with this step.  
+  
+    User Message: '{user_msg}'
+    """  
     return prompt  
+

@@ -2,9 +2,11 @@
 from .openai_client import OpenAiClient
 from .voice import fast_speech_recog, speech_recog, text2speech
 from .llm_prompts import *
+from .user_state import UserData
+from .ai_agent import SearchAgent
+
 from utils import convert_base64_audio_to_wav, lang2voice, load_preprocess_json
 from uuid import uuid4
-from .user_state import UserData
 import asyncio
 
 default_fields = {"GeneralInformation": {"Gender": "", "FirstName": "", "LastName": ""},"BusinessInformation": {"Company": "", "City": "", "Country": "", "Street": "", "HouseNumber": "", "PostalCode": "", "AdditionalInformationAddress": "", "PositionLevel": "", "Department": "", "JobTitle": "", "Industry": "", "EducationLevel": "", "PhoneNumber": "", "MobilePhoneNumber": "", "BusinessEmail": ""}, "PersonalInformation": { "City": "", "Country": "", "Street": "", "HouseNumber": "", "PostalCode": "", "AdditionalInfoAddress": "", "PhoneNumber": "", "MobilePhoneNumber": "", "PersonalEMail": "" }}
@@ -14,6 +16,7 @@ class VoiceBot:
     def __init__(self, openai_config: dict, speech_config: dict = None):
         self.openai_client = OpenAiClient(openai_config)
         self.users_states = {} # report_id to state
+        self.ai_agent = SearchAgent()
 
 
     async def process_user_message(self, lang: str = "de-DE", request_type: str = "", session_id: str = None, callreportID: str = None, payload = {}, form_type: str = ""):
@@ -44,7 +47,8 @@ class VoiceBot:
             order = 1
             if msg_type == "Fill insterests": 
                 commands.append(self.gen_general_command("giveListInterests", order = order))
-            elif msg_type in ["Update contact info", "Create contact", "Create report"] or (msg_type == "Save" and form_type == "contact"):    
+            elif msg_type in ["Update contact info", "Create contact", "Create report", "Find person information", "Find company information"] \
+            or (msg_type == "Save" and form_type == "contact"):    
                 commands.append(self.gen_general_command("giveListContactFilds", order = order))
             print("Givelist command")
             if commands:
@@ -146,18 +150,22 @@ class VoiceBot:
             # contact = await self.extract_info_from_text(text, contact_fields)
             # user_state, new_commands = await self.check_info_ask_for_extra_info(text, user_state, "updateCurrentContact", contact, required_fields, order)
             commands.extend(extend_commands)
+        elif msg_type == "Find person information":
+            commands, user_state = await self.fill_internet_personal_info(text, payload, user_state, order)
+        elif msg_type == "Find company information":
+            commands, user_state = await self.fill_internet_company_info(text, payload, user_state, order)
         elif msg_type == "Cancel":
             order += 1
             commands.append(self.gen_general_command("Cancel", order = order))
         elif msg_type == "Save":
             order += 1
             extend_commands = []
-            if form_type == "contact":
+            if form_type == "contact": 
                 required_fields = payload["RequiredFields"]
                 user_state, extend_commands = await self.check_info_ask_for_extra_info(text, user_state, "", payload, required_fields, order)
-            if extend_commands:
+            if extend_commands: 
                 commands.extend(extend_commands)
-            else:
+            else: 
                 commands.append(self.gen_general_command("saveCurrentDocument", order = order))
         elif msg_type == "Add follow-ups":
             follow_apps = await self.extract_follow_ups(text)
@@ -165,6 +173,60 @@ class VoiceBot:
             commands.append(self.gen_general_command("addFollowUps", follow_apps, "list", order))
         
         return commands, user_state
+    
+    async def fill_internet_personal_info(self, user_msg: str, user_form: dict, user_data: UserData, order = 0) -> list:
+        commands = []
+        print("FIll internet information")
+        first_name, second_name = user_form["GeneralInformation"]["FirstName"], user_form["GeneralInformation"]["LastName"]
+        person = first_name + " " + second_name
+        company = user_form["BusinessInformation"]["Company"] 
+        country = user_form["PersonalInformation"]["Country"]
+        neccessary_info = (first_name, second_name, company)
+        if not all(neccessary_info):
+            missing = [i for i in neccessary_info if not i]
+            answer = await self.generate_missing_field_message(user_msg, missing, False, True)
+            order += 1
+            user_data.last_answer = answer
+            commands.append(self.gen_voice_play_command(answer, order, user_data.language))
+            return  commands, user_data
+        personal_info = await self.ai_agent.get_person_info(person, company, country)
+        if personal_info == "None":
+            answer = await self.gen_no_info_found(user_msg)
+            user_data.last_answer = answer
+            order += 1
+            commands.append(self.gen_voice_play_command(answer, order, user_data.language))
+            return  commands, user_data
+        fields = await self._fill_forms_with_extra_info(personal_info, user_form)
+        print("Personal info: ", personal_info)
+        print("new: ", fields)
+        order += 1
+        commands.append(self.gen_general_command("updateCurrentContact", value = fields, val_type = "json", order = order))
+        return commands, user_data
+    
+
+    async def fill_internet_company_info(self, user_msg: str, user_form: dict, user_data: UserData, order: int = 0):
+        commands = []
+        print("FIll internet info about company")
+        company = user_form["BusinessInformation"]["Company"]  
+        if not company:
+            answer = await self.generate_missing_field_message(user_msg, [company], False, True)
+            order += 1
+            user_data.last_answer = answer
+            commands.append(self.gen_voice_play_command(answer, order, user_data.language))
+            return  commands, user_data
+        personal_info = await self.ai_agent.get_company_info(company)
+        if personal_info == "None":
+            answer = await self.gen_no_info_found(user_msg)
+            user_data.last_answer = answer
+            order += 1
+            commands.append(self.gen_voice_play_command(answer, order, user_data.language))
+            return  commands, user_data
+        fields = await self._fill_forms_with_extra_info(personal_info, user_form)
+        print("Personal info: ", personal_info)
+        print("new: ", fields)
+        order += 1
+        commands.append(self.gen_general_command("updateCurrentContact", value = fields, val_type = "json", order = order))
+        return commands, user_data
     
 
     async def _create_contact(self, text: str, payload, user_data: UserData, request_type: str, order = 0):
@@ -209,7 +271,7 @@ class VoiceBot:
         return {"commands": extend_commands, "interests": interests, "order": order}
     
 
-    async def classify_user_message(self, message: str, chat_history):
+    async def classify_user_message(self, message: str, chat_history)->str:
         messages = [
                 {"role": "system", "content": classification_system_prompt},
                 {"role": "user", "content": get_classification_prompt(message, chat_history) + message + "'"}
@@ -218,7 +280,7 @@ class VoiceBot:
         return res
 
 
-    async def extract_info_from_text(self, text: str, fields: dict):
+    async def extract_info_from_text(self, text: str, fields: dict)->str:
         messages = [
                 {"role": "system", "content": extract_form_system_prompt},
                 {"role": "user", "content": prompt_fill_form_fields(fields) + text}
@@ -226,6 +288,14 @@ class VoiceBot:
         res = await self.openai_client.generate_response(messages)
         print("FIlled fields", res)
         return str(res).strip("'<>() ").replace('\'', '\"')
+    
+
+    async def _fill_forms_with_extra_info(self, information: str, fields: dict)->str:
+        messages = [
+            {"role": "user", "content": prompt_fill_form_fields_internet(fields, information)}
+        ]
+        res = await self.openai_client.generate_response(messages)
+        return str(res).strip("'<>() ").replace('\'', '\"') 
     
 
     async def extract_follow_ups(self, text: str):
@@ -321,8 +391,8 @@ class VoiceBot:
         voice_play = self.gen_general_command("playBotVoice", val, "record", order)
         return voice_play
     
-    async def generate_missing_field_message(self, text: str, missing_fields: list, is_saving: bool):
-        prompt = get_missing_fields_prompt(text, missing_fields, is_saving)
+    async def generate_missing_field_message(self, text: str, missing_fields: list, is_saving: bool, is_search: bool = False):
+        prompt = get_missing_fields_prompt(text, missing_fields, is_saving, is_search)
         messages = [
                 {"role": "user", "content": prompt}
             ]
@@ -359,3 +429,10 @@ class VoiceBot:
             command["parameters"]["type"] = val_type
         return command
     
+    async def gen_no_info_found(self, user_msg: str):
+        prompt = get_prompt_no_info_found(user_msg)
+        messages = [
+                {"role": "user", "content": prompt}
+            ]
+        message = await self.openai_client.generate_response(messages)
+        return message

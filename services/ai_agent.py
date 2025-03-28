@@ -76,7 +76,7 @@ class SearchAgent:
             print(f"Run failed: {run.last_error}")
             raise Exception
         messages = await self.project_client.agents.list_messages(thread_id=thread.id)
-        print(messages)
+        # print(messages)
         response_message = messages.get_last_message_by_role(
             MessageRole.AGENT
         )
@@ -84,8 +84,9 @@ class SearchAgent:
             return " ".join([i.text.value for i in response_message.text_messages])
 
 
-    async def get_person_info(self, full_name: str, company: str):
-        prompt = f"""Find information about {full_name} that works at {company}. Try using linkedin as main source of data.
+    async def get_person_info(self, full_name: str, company: str, country: str = None):
+        from_country = f"from {country} " if country else ""
+        prompt = f"""Find information about {full_name} {from_country}that works at {company}. Try using linkedin as main source of data.
         If you don't have any relevant information about {full_name} just return - 'None'"""
         res = await self._generate_answer(prompt)
         return res
