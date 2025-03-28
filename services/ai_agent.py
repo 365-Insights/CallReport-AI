@@ -88,7 +88,8 @@ class SearchAgent:
         from_country = f"from {country} " if country else ""  
         prompt = (  
             f"""Find detailed professional information about {full_name} {from_country}who works at {company}. Use LinkedIn as the primary source. Include job title, department, and professional background. If possible, obtain contact details and a profile link.  
-            If LinkedIn does not provide information, check industry publications or company websites. If no relevant information can be found, return just 'None' nothing else."""  
+            If LinkedIn does not provide information, check industry publications or company websites. If no relevant information can be found, return just 'None' nothing else.
+            If you find then provide summery about the person, his email, phone, location, position, job title, industry where he works, education level. The more info the better."""  
         )  
         res = await self._generate_answer(prompt)  
     

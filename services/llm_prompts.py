@@ -265,7 +265,7 @@ Given the following information text:
 "{internet_info_text}"  
   
 Return only a JSON object with all attributes in the exact format specified below, without any additional text or modifications. 
-Prioritize existing values in the form if they are already filled.
+Prioritize existing values in the form if they are already filled. And don't forget to fill summery fields if they are empty.
 Do not include any explanations, return only the JSON object, and do not exclude attributes from the JSON even if they are empty. This is important.  
   
 Form fields:  
