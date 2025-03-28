@@ -35,7 +35,7 @@ def get_classification_prompt(user_msg, chat_history):
   
 - **Fill interests**: The user mentions interests or preferences that should be recorded or updated, such as hobbies, likes, or areas of focus.    
   
-- **Update contact info**: The user provides some information. If the intent is not to create a new contact but rather to modify or update existing details or fill in some contact information, classify it here. 
+- **Update contact info**: The user provides some information. If the intent is not to create a new contact but rather to modify or update existing details or fill in some contact information classify it here. Lots of time user will just say some info like 'My name is Sasha' and it should go here, chat history will help in such a cases
   
 - **Add follow-ups**: The user indicates a need to create tasks, reminders, or action items to be followed up on in the future. These could involve scheduling a call, setting a meeting, or assigning a task.    
   

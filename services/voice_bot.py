@@ -28,13 +28,12 @@ class VoiceBot:
             user_data = UserData(session_id, "default", {}, "", "", lang)
         last_message = user_data.last_message
         last_answer = user_data.last_answer
-            
         user_text = "" 
         if request_type == "record":  
             audio_path = f"temp/{file_id}.wav"  
             try:  
                 output_path = convert_base64_audio_to_wav(payload, audio_path)  
-                user_text, lang = fast_speech_recog(output_path)  
+                user_text, _ = fast_speech_recog(output_path)  
                 user_data.language = lang
                 print("USER TEXT: ", user_text)
             except Exception as e:  
@@ -190,6 +189,7 @@ class VoiceBot:
             commands.append(self.gen_voice_play_command(answer, order, user_data.language))
             return  commands, user_data
         personal_info = await self.ai_agent.get_person_info(person, company, country)
+        print("Personal info: ", personal_info)
         if personal_info == "None":
             answer = await self.gen_no_info_found(user_msg)
             user_data.last_answer = answer
@@ -197,7 +197,6 @@ class VoiceBot:
             commands.append(self.gen_voice_play_command(answer, order, user_data.language))
             return  commands, user_data
         fields = await self._fill_forms_with_extra_info(personal_info, user_form)
-        print("Personal info: ", personal_info)
         print("new: ", fields)
         order += 1
         commands.append(self.gen_general_command("updateCurrentContact", value = fields, val_type = "json", order = order))
@@ -215,6 +214,7 @@ class VoiceBot:
             commands.append(self.gen_voice_play_command(answer, order, user_data.language))
             return  commands, user_data
         personal_info = await self.ai_agent.get_company_info(company)
+        print("Personal info: ", personal_info)
         if personal_info == "None":
             answer = await self.gen_no_info_found(user_msg)
             user_data.last_answer = answer
@@ -222,7 +222,6 @@ class VoiceBot:
             commands.append(self.gen_voice_play_command(answer, order, user_data.language))
             return  commands, user_data
         fields = await self._fill_forms_with_extra_info(personal_info, user_form)
-        print("Personal info: ", personal_info)
         print("new: ", fields)
         order += 1
         commands.append(self.gen_general_command("updateCurrentContact", value = fields, val_type = "json", order = order))

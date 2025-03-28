@@ -84,16 +84,34 @@ class SearchAgent:
             return " ".join([i.text.value for i in response_message.text_messages])
 
 
-    async def get_person_info(self, full_name: str, company: str, country: str = None):
-        from_country = f"from {country} " if country else ""
-        prompt = f"""Find information about {full_name} {from_country}that works at {company}. Try using linkedin as main source of data.
-        If you don't have any relevant information about {full_name} just return - 'None'"""
-        res = await self._generate_answer(prompt)
-        return res
+    async def get_person_info(self, full_name: str, company: str, country: str = None):  
+        from_country = f"from {country} " if country else ""  
+        prompt = (  
+            f"""Find detailed professional information about {full_name} {from_country}who works at {company}. Use LinkedIn as the primary source. Include job title, department, and professional background. If possible, obtain contact details and a profile link.  
+            If LinkedIn does not provide information, check industry publications or company websites. If no relevant information can be found, return just 'None' nothing else."""  
+        )  
+        res = await self._generate_answer(prompt)  
+    
+        # Retry logic if res is 'None'  
+        if res == 'None':  
+            print("Retry finding persons information")
+            # Alter the prompt slightly: perhaps broaden the search or change phrases.  
+            prompt_retry = (  
+                f"""Attempt to find any publicly available information about {full_name} {from_country}associated with {company} using alternative professional networks or news articles. Focus on identifying their role and contributions to the company.  
+                If no information is still found, confirm 'None'."""  
+            )  
+            res = await self._generate_answer(prompt_retry)  
+        return res  
 
     async def get_company_info(self, company_name: str):
-        prompt = f"""Find information about company with the name{company_name}. Try using likedin or company website as main sources of data.
-        If you don't have any relevant information about {company_name} just return - 'None'"""
+        prompt = f"""Gather detailed information about the company named {company_name}. Use LinkedIn and official company websites as primary sources. Required details include:  
+        - Company address  
+        - Management (e.g., Managing Director)  
+        - Phone  
+        - E-mail  
+        - Legal registration info (e.g., Amtsgericht, HRB)  
+        - Standart information about the company that could be useful like summery about and etc.
+        If no relevant information about {company_name} can be found, return 'None'."""     
         res = await self._generate_answer(prompt)
         return res
     
