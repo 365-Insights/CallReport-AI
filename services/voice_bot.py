@@ -294,7 +294,11 @@ class VoiceBot:
             {"role": "user", "content": prompt_fill_form_fields_internet(fields, information)}
         ]
         res = await self.openai_client.generate_response(messages)
-        return str(res).strip("'<>() ").replace('\'', '\"') 
+        res = str(res).strip("'<>() ")
+        # .replace('\'', '\"') 
+        # if isinstance(contact_fields, str):
+        contact_fields = load_preprocess_json(res)
+        return contact_fields
     
 
     async def extract_follow_ups(self, text: str):

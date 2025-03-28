@@ -105,7 +105,7 @@ def load_preprocess_json(text: str):
     # Step 2: Normalize escaped characters (e.g., \\\" -> \")  
     text = text.replace('\\"', '"').replace('\\\\', '\\')  
     # text = str(text).strip("'<>()\\ \"").replace('\'', '\"')
-    text = text.replace("\'", "\"")
+    text = re.sub(r'(?<=["])\'(?=[^"]*["])', '"', text)
     # print("END", text)
     # Step 3: Attempt to parse the cleaned JSON string  
     try:  
