@@ -33,7 +33,7 @@ class VoiceBot:
             audio_path = f"temp/{file_id}.wav"  
             try:  
                 output_path = convert_base64_audio_to_wav(payload, audio_path)  
-                user_text, _ = fast_speech_recog(output_path)  
+                user_text, _ = fast_speech_recog(output_path, lang)  
                 user_data.language = lang
                 print("USER TEXT: ", user_text)
             except Exception as e:  
