@@ -42,7 +42,7 @@ async def main(req: func.HttpRequest) -> func.HttpResponse:
         except Exception:
             print("Encountered an exception")
             print(traceback.format_exc())
-            response = await voice_bot.form_error_resonse(sessionID)
+            response = await voice_bot.form_error_resonse(sessionID, language)
         return func.HttpResponse(json.dumps(response), mimetype="application/json")
 
     except Exception:

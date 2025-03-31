@@ -127,3 +127,7 @@ def load_preprocess_json(text: str):
 
 with open("utils/lang_voice.json", "r") as f:
     lang2voice = json.loads(f.read())
+
+
+with open("utils/locale_lang.json", "r") as f:
+    locale2lang = json.loads(f.read())

@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 
-
+from utils import locale2lang
 
 def get_formatted_history(chat_history) -> str:
     formatted_history = "\n".join(  
@@ -94,7 +94,7 @@ def get_extract_interests_prompt(user_message, available_interests):
 
     {available_interests}
 
-    Given a user's message, identify and return the most likely interests from the list of available interests. The output should be only a Python list of IDs. If there is not relevant interests return empty list: []
+    Given a user's message, identify and return the most likely interests from the list of available interests. The output should be only a Python list of IDs use double quotes for ids. If there is not relevant interests return empty list: []
 
     User message: "{user_message}"
 
@@ -114,7 +114,7 @@ Output:
 """
     return prompt
 
-def get_missing_fields_prompt(user_message: str, missing_fields: list, is_saving: bool = False, is_search: bool = False):  
+def get_missing_fields_prompt(user_message: str, missing_fields: list, is_saving: bool = False, is_search: bool = False, locale: str = "de-DE"):  
     # Base prompt  
     prompt = f"""  
     You are a friendly and intelligent assistant. Your task is to generate a polite, friendly, and clear message to ask the user for missing required information. The missing fields are provided in the list below, and the user's message (if any) should be acknowledged politely.  
@@ -125,7 +125,7 @@ def get_missing_fields_prompt(user_message: str, missing_fields: list, is_saving
     3. Politely ask the user to provide the requested information one by one, phrased as natural and conversational questions.  
     4. Maintain a conversational, approachable, and polite tone throughout.  
     5. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.  
-    6. When responding to a user's message, always reply in the same language as the message you receive. For example, if the message is in English, reply in English; if the message is in German, reply in German. Do not switch languages unless explicitly requested by the user. If the language of the message cannot be determined, default to responding in German. Ensure the entire response remains consistent with the language of the original message.  
+    6. When responding to a user's message, always reply in '{locale2lang[locale]}'
     """  
   
     # Add specific instructions if the `is_saving` flag is True  
@@ -153,7 +153,7 @@ def get_missing_fields_prompt(user_message: str, missing_fields: list, is_saving
     return prompt  
 
 
-def get_general_answer_prompt(user_message):
+def get_general_answer_prompt(user_message, locale: str = "de-DE"):
     prompt = f"""The user hasn’t indicated a specific action or request. Respond in a friendly and engaging way, letting them know what you can assist with. Use the following categories to explain your capabilities:    
 
 - Create contact    
@@ -166,7 +166,7 @@ def get_general_answer_prompt(user_message):
 - Autofill some company information using internet
 - Autofill some personal information using internet
 RULES:
-1. When responding to a user's message, always reply in the same language as the message you receive. For example, if the message is in English, reply in English; if the message is in German, reply in German. Do not switch languages unless explicitly requested by the user. If the language of the message cannot be determined, default to responding in German. Ensure the entire response remains consistent with the language of the original message.
+1. When responding to a user's message, always reply in '{locale2lang[locale]}'
 2. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.
 3. Your tone should be polite, encouraging, and professional. Make the user feel welcome to ask for help if they need it. Keep your response brief and friendly.    
   
@@ -174,45 +174,45 @@ User Message: '{user_message}'  """
     return prompt
 
 
-def get_prompt_not_in_call_report(user_msg: str):
+def get_prompt_not_in_call_report(user_msg: str, locale: str = "de-DE"):
     prompt = f"""The user has requested an action, but before proceeding with their request, they need to create a call report or open an existing one. Generate a polite and friendly response to inform the user of this requirement. Make sure the tone is supportive and encouraging, and clearly explain that creating or opening a call report is necessary before continuing.  
     RULES:
     1. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.
-    2. When responding to a user's message, always reply in the same language as the message you receive. For example, if the message is in English, reply in English; if the message is in German, reply in German. Do not switch languages unless explicitly requested by the user. If the language of the message cannot be determined, default to responding in German. Ensure the entire response remains consistent with the language of the original message.
+    2. When responding to a user's message, always reply in '{locale2lang[locale]}'
     3. If appropriate, offer guidance on how they can create or open a call report, or let them know you’re available to assist with this step.    
     
     User Message: "{user_msg}"  """
     return prompt
 
 
-
-prompt_error_occured = """  
-Generate a polite, user-friendly error message to notify the user that an issue has occurred while processing their request. The message should acknowledge the failure, reassure the user, and encourage them to try again. Avoid technical jargon and maintain a tone that is friendly, empathetic, and professional.  
-  
-### Steps:  
-1. Politely acknowledge that an issue has occurred.  
-2. Briefly inform the user that their request could not be completed due to the error.  
-3. Reassure the user that the issue is likely temporary or fixable.  
-4. Encourage the user to try their request again.  
-5. Optionally offer help or suggest contacting support if the issue persists.  
-6. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.
-7. Response should be in german.
-  
-### Output Format:  
-- Tone: Friendly, polite, and supportive.  
-- Length: 1–2 sentences.  
-  
-### Examples:  
-1. "Oops! Something went wrong while processing your request. Please try again in a moment."  
-2. "We're sorry, but we encountered an issue while handling your request. Please try again shortly."  
-3. "Uh-oh, it looks like something went wrong. Don’t worry—please give it another shot!"  
-4. "Apologies! We hit a small snag while processing your request. Please try again, and thank you for your patience."  
-5. "Something went wrong on our end. Please try again, and let us know if the issue persists."  
-"""  
-
-def get_suggestion_prompt(user_message: str, category: str, chat_history: list) -> str:  
-    # Format the chat history into a readable string for the prompt  
+def get_error_prompt(locale: str = "de-DE"):
+    prompt_error_occured = f"""  
+    Generate a polite, user-friendly error message to notify the user that an issue has occurred while processing their request. The message should acknowledge the failure, reassure the user, and encourage them to try again. Avoid technical jargon and maintain a tone that is friendly, empathetic, and professional.  
     
+    ### Steps:  
+    1. Politely acknowledge that an issue has occurred.  
+    2. Briefly inform the user that their request could not be completed due to the error.  
+    3. Reassure the user that the issue is likely temporary or fixable.  
+    4. Encourage the user to try their request again.  
+    5. Optionally offer help or suggest contacting support if the issue persists.  
+    6. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.
+    7. Response should be in '{locale2lang[locale]}'
+    
+    ### Output Format:  
+    - Tone: Friendly, polite, and supportive.  
+    - Length: 1–2 sentences.  
+    
+    ### Examples:  
+    1. "Oops! Something went wrong while processing your request. Please try again in a moment."  
+    2. "We're sorry, but we encountered an issue while handling your request. Please try again shortly."  
+    3. "Uh-oh, it looks like something went wrong. Don’t worry—please give it another shot!"  
+    4. "Apologies! We hit a small snag while processing your request. Please try again, and thank you for your patience."  
+    5. "Something went wrong on our end. Please try again, and let us know if the issue persists."  
+    """  
+    return prompt_error_occured
+
+def get_suggestion_prompt(user_message: str, category: str, chat_history: list, locale: str = "de-DE") -> str:  
+    # Format the chat history into a readable string for the prompt  
     formatted_history = get_formatted_history(chat_history)
     prompt = f"""  
 You are a helpful and proactive assistant. Your task is to provide a useful suggestion to the user based on their message, the specified task category, and the full chat history. Each category has a unique purpose, and your suggestion should guide the user toward completing the task effectively or improving the outcome and they should be pretty short.  
@@ -222,8 +222,7 @@ You are a helpful and proactive assistant. Your task is to provide a useful sugg
 3. If the category is **Cancel**, simply confirm the action has been canceled without recommending further steps. Use varied phrasing to keep the response engaging.  
 4. Ensure your tone is friendly, encouraging, and action-oriented.  
 5. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.  
-6. When responding to a user's message, always reply in the same language as the message you receive. For example, if the message is in English, reply in English; if the message is in German, reply in German. Do not switch languages unless explicitly requested by the user. If the language of the message cannot be determined, default to responding in German. Ensure the entire response remains consistent with the language of the original message.  
-  
+6. When responding to a user's message, always reply in '{locale2lang[locale]}'
 ### Chat History:  
 {formatted_history}  
   
@@ -265,22 +264,13 @@ Form fields:
 """ 
     return extract_form_internet_prompt 
 
-def get_prompt_no_info_found(user_msg: str):  
-    """  
-    Generates a polite and friendly response to inform the user that no information was found on the internet to automatically fill extra info in the form.  
-  
-    Parameters:  
-    - user_msg (str): The user's message.  
-  
-    Returns:  
-    - str: Formatted prompt for GPT.  
-    """  
+def get_prompt_no_info_found(user_msg: str, locale: str = "de-DE"):  
     prompt = f"""  
     The user has requested to fill extra information in the form automatically. Generate a polite and friendly response to inform the user that, unfortunately, no information was found about them on the internet to fill in the extra info automatically. Encourage them to fill in the information manually.  
   
     RULES:  
     1. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.  
-    2. When responding to a user's message, always reply in the same language as the message you receive. For example, if the message is in English, reply in English; if the message is in German, reply in German. Do not switch languages unless explicitly requested by the user. If the language of the message cannot be determined, default to responding in German. Ensure the entire response remains consistent with the language of the original message.  
+    2. When responding to a user's message, always reply in '{locale2lang[locale]}'
     3. If appropriate, offer guidance on how they can fill in the information manually, and let them know you’re available to assist with this step.  
   
     User Message: '{user_msg}'

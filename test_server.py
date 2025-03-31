@@ -60,7 +60,7 @@ async def process_request(payload: RequestPayload):
         except Exception:
             print("Encountered an exception")
             print(traceback.format_exc())
-            response = await voice_bot.form_error_resonse(sessionID)
+            response = await voice_bot.form_error_resonse(sessionID, language)
         # Example test response (can be replaced with the actual response)  
   
         # Return the processed response as JSON  

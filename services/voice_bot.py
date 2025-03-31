@@ -5,7 +5,7 @@ from .llm_prompts import *
 from .user_state import UserData
 from .ai_agent import SearchAgent
 
-from utils import convert_base64_audio_to_wav, lang2voice, load_preprocess_json
+from utils import convert_base64_audio_to_wav, lang2voice, load_preprocess_json, locale2lang
 from uuid import uuid4
 import asyncio
 
@@ -65,7 +65,7 @@ class VoiceBot:
         not_in_call_report =  not callreportID or callreportID.lower() == "null" or callreportID.lower() == "none"
         async with asyncio.TaskGroup() as tg:
             suggestion_task = tg.create_task( 
-                self.generate_accompany_message(user_text, msg_type, user_data.chat_history))
+                self.generate_accompany_message(user_text, msg_type, user_data))
 
             main_task  = tg.create_task(
                 self.generate_answer(user_text, msg_type, request_type, payload, user_data, not_in_call_report, form_type)
@@ -75,17 +75,21 @@ class VoiceBot:
 
         if not self.check_for_voice_command(commands):
             print("Don't have voice command so add accompany text")
-            accompany_audio = self.gen_voice_play_command(accompany_text, commands[-1]["order"]+1, user_data.language)
+            if commands:
+               orders = commands[-1]["order"]+1 
+            else:
+                orders = 1
+            accompany_audio = self.gen_voice_play_command(accompany_text, orders, user_data.language)
             commands.append(accompany_audio)
         user_state.last_message = user_text 
         self.users_states[session_id] = user_state
         response = self.form_response(commands, session_id)
         return response
     
-    async def generate_accompany_message(self, user_msg: str, category: str, chat_history):
+    async def generate_accompany_message(self, user_msg: str, category: str, user_data: UserData):
         category = category.replace("report", "contact")
         messages = [
-                {"role": "user", "content": get_suggestion_prompt(user_msg, category, chat_history)}
+                {"role": "user", "content": get_suggestion_prompt(user_msg, category, user_data.chat_history, user_data.language)}
             ]
         text = await self.openai_client.generate_response(messages)
         return text
@@ -98,12 +102,12 @@ class VoiceBot:
         return False
 
 
-    async def form_error_resonse(self, session_id):
+    async def form_error_resonse(self, session_id, locale: str = "de-DE"):
         messages = [
-                {"role": "user", "content": prompt_error_occured}
+                {"role": "user", "content": get_error_prompt(locale)}
             ]
         text = await self.openai_client.generate_response(messages)
-        commands = [self.gen_voice_play_command(text, 1, "de-DE")]
+        commands = [self.gen_voice_play_command(text, 1, locale)]
         return self.form_response(commands, session_id)
 
 
@@ -124,7 +128,7 @@ class VoiceBot:
             commands.extend(res["commands"])
             order = res["order"]
         elif msg_type == "None":
-            answer = await self.generate_general_answer(text)
+            answer = await self.generate_general_answer(text, user_state.language)
             user_state.last_answer = answer
             order += 1
             commands.append(self.gen_voice_play_command(answer, order, user_state.language))
@@ -183,7 +187,7 @@ class VoiceBot:
         neccessary_info = (first_name, second_name, company)
         if not all(neccessary_info):
             missing = [i for i in neccessary_info if not i]
-            answer = await self.generate_missing_field_message(user_msg, missing, False, True)
+            answer = await self.generate_missing_field_message(user_msg, missing, False, True, user_data = user_data)
             order += 1
             user_data.last_answer = answer
             commands.append(self.gen_voice_play_command(answer, order, user_data.language))
@@ -208,7 +212,7 @@ class VoiceBot:
         print("FIll internet info about company")
         company = user_form["BusinessInformation"]["Company"]  
         if not company:
-            answer = await self.generate_missing_field_message(user_msg, [company], False, True)
+            answer = await self.generate_missing_field_message(user_msg, [company], False, True, user_data = user_data)
             order += 1
             user_data.last_answer = answer
             commands.append(self.gen_voice_play_command(answer, order, user_data.language))
@@ -359,7 +363,7 @@ class VoiceBot:
         if missing_fields:
             user_data.state = "fill_required"
             order += 1
-            msg = await self.generate_missing_field_message(text, missing_fields, not cmd_name)
+            msg = await self.generate_missing_field_message(text, missing_fields, not cmd_name, user_data = user_data)
             extend_commands.append(self.gen_voice_play_command(msg, order, user_data.language))
             user_data.last_answer = msg
         return user_data, extend_commands
@@ -394,8 +398,8 @@ class VoiceBot:
         voice_play = self.gen_general_command("playBotVoice", val, "record", order)
         return voice_play
     
-    async def generate_missing_field_message(self, text: str, missing_fields: list, is_saving: bool, is_search: bool = False):
-        prompt = get_missing_fields_prompt(text, missing_fields, is_saving, is_search)
+    async def generate_missing_field_message(self, text: str, missing_fields: list, is_saving: bool, is_search: bool = False, user_data: UserData = None):
+        prompt = get_missing_fields_prompt(text, missing_fields, is_saving, is_search, user_data.language)
         messages = [
                 {"role": "user", "content": prompt}
             ]
@@ -403,8 +407,8 @@ class VoiceBot:
         return message
 
 
-    async def generate_general_answer(self, user_msg):
-        prompt = get_general_answer_prompt(user_msg)
+    async def generate_general_answer(self, user_msg, lang: str = "de-DE"):
+        prompt = get_general_answer_prompt(user_msg, lang)
         messages = [
                 {"role": "user", "content": prompt}
             ]
@@ -413,7 +417,7 @@ class VoiceBot:
     
 
     async def generate_not_in_callreport_answer(self, user_msg: str, lang: str = "de-DE"):
-        prompt = get_prompt_not_in_call_report(user_msg)
+        prompt = get_prompt_not_in_call_report(user_msg, lang)
         messages = [
                 {"role": "user", "content": prompt}
             ]
@@ -432,8 +436,8 @@ class VoiceBot:
             command["parameters"]["type"] = val_type
         return command
     
-    async def gen_no_info_found(self, user_msg: str):
-        prompt = get_prompt_no_info_found(user_msg)
+    async def gen_no_info_found(self, user_msg: str, lang: str = "de-DE"):
+        prompt = get_prompt_no_info_found(user_msg, lang)
         messages = [
                 {"role": "user", "content": prompt}
             ]
