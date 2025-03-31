@@ -16,6 +16,7 @@ endpoint_fast = f"https://{region}.api.cognitive.microsoft.com/speechtotext/tran
 
 
 def fast_speech_recog(audio_file_path: str, lacales = ["de-DE", "en-US"], retry = True):
+    print("Starting locales: ", lacales)
     definition = {
         "locales": lacales,
         "profanityFilterMode": "Masked",
