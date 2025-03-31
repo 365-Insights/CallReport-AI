@@ -24,42 +24,32 @@ Do not include any explanations, return only the JSON object, and do not exclude
 classification_system_prompt = """Your task is to analyze the current user message in the context of the conversation, which includes the **last bot response** and the **previous user message**. Based on this context, determine the most appropriate category from the list above. Always return **exactly one category** from the list, even if the message appears ambiguous. If the current user message does not clearly fit any of the categories, return "None."   
   
 Provide no explanations or additional text, only the name of the selected category.  """
-def get_classification_prompt(user_msg, chat_history):
-    formatted_history = get_formatted_history(chat_history)
+def get_classification_prompt(user_msg, chat_history):  
+    formatted_history = get_formatted_history(chat_history)  
     ### Chat History:  
-    classification_prompt = f"""Classify the current user message into one of the predefined categories below. Use the descriptions provided for each category to make an informed decision:    
-  
-- **Create contact**: The user explicitly requests to create a new contact.   
-  
+    classification_prompt = f"""  
+Classify the current user message into one of the predefined categories below. Use the descriptions provided for each category to make an informed decision:  
+- **Create contact**: The user explicitly requests to create a new contact.  
 - **Create report**: The user explicitly requests to generate or create a report.  
+- **Fill interests**: The user mentions interests or preferences that should be recorded or updated, such as hobbies, likes, or areas of focus.  
+- **Update contact info**: The user provides some information. If the intent is not to create a new contact but rather to modify or update existing details or fill in some contact information, classify it here. This includes follow-up messages providing additional details such as 'The name is Cloud Value.' or could be general message "My name is Sasha"
+- **Add follow-ups**: The user indicates a need to create tasks, reminders, or action items to be followed up on in the future. These could involve scheduling a call, setting a meeting, or assigning a task.  
+- **Find person information**: The user asks to fill information about himself with data from the Internet. This could be a request like 'automatically fill in my personal info' or 'find information about me on the internet.'  
+- **Find company information**: The user asks to fill some company information using data from the Internet. This could be a request like 'automatically fill in my company info' or 'find information about my company on the internet.' This does not include follow-up messages providing specific details like company names.  
+- **Cancel**: The user wants to cancel an action, task, or operation. This includes explicit requests to stop, abort, or discontinue a process.  
+- **Save**: The user explicitly asks to save something, such as progress, settings, or changes they’ve made.  
+- **None**: The user’s message does not match any of the above categories or is unclear in intent. Use this category if the message is ambiguous or unrelated to any predefined action.  
   
-- **Fill interests**: The user mentions interests or preferences that should be recorded or updated, such as hobbies, likes, or areas of focus.    
+Use the following context to make your decision:  
+### Chat History: {formatted_history}  
+**Rules:**  
+1. Always return **exactly one category** from the list above.  
+2. If the current user message is unclear or does not match any category, return "None."  
+3. Provide no additional text or explanation—only the name of the selected category.  
   
-- **Update contact info**: The user provides some information. If the intent is not to create a new contact but rather to modify or update existing details or fill in some contact information classify it here. Lots of time user will just say some info like 'My name is Sasha' and it should go here, chat history will help in such a cases
-  
-- **Add follow-ups**: The user indicates a need to create tasks, reminders, or action items to be followed up on in the future. These could involve scheduling a call, setting a meeting, or assigning a task.    
-  
-- **Find person information**: The user asks to fill information about himself with data from the Internet. This could be request like 'automically fill in my personal info'.
-
-- **Find company information**: The user asks to fill some company information using data from the Internet. This could be request like 'automically fill in my company info'.
-
-- **Cancel**: The user wants to cancel an action, task, or operation. This includes explicit requests to stop, abort, or discontinue a process.    
-  
-- **Save**: The user explicitly asks to save something, such as progress, settings, or changes they’ve made.    
-
-- **None**: The user’s message does not match any of the above categories or is unclear in intent. Use this category if the message is ambiguous or unrelated to any predefined action.    
-  
-Use the following context to make your decision:    
-### Chat History:  
-{formatted_history}  
-  
-**Rules:**    
-1. Always return **exactly one category** from the list above.    
-2. If the current user message is unclear or does not match any category, return "None."    
-3. Provide no additional text or explanation—only the name of the selected category.    
-  
-Current user message: '{user_msg}'"""
-    return classification_prompt
+Current user message: '{user_msg}'  
+"""  
+    return classification_prompt  
 
 
 system_flollow_ups = """You are a highly accurate and efficient assistant designed to extract specific information from transcribed text. Your task is to extract the following data obtained using the Speech-to-Text service, check the spelling, and consider that it may be a dialogue."""
@@ -173,6 +163,8 @@ def get_general_answer_prompt(user_message):
 - Add follow-ups    
 - Cancel    
 - Save document    
+- Autofill some company information using internet
+- Autofill some personal information using internet
 RULES:
 1. When responding to a user's message, always reply in the same language as the message you receive. For example, if the message is in English, reply in English; if the message is in German, reply in German. Do not switch languages unless explicitly requested by the user. If the language of the message cannot be determined, default to responding in German. Ensure the entire response remains consistent with the language of the original message.
 2. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.
