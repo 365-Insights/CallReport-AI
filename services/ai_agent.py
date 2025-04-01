@@ -98,7 +98,11 @@ class SearchAgent:
             print("Retry finding persons information")
             # Alter the prompt slightly: perhaps broaden the search or change phrases.  
             prompt_retry = (  
-                f"""Attempt to find any publicly available information about {full_name} {from_country}associated with {company} using alternative professional networks or news articles. Focus on identifying their role and contributions to the company.  
+                f"""Attempt to find any publicly available information about {full_name} who works at {company}associated with {company} using alternative professional networks or news articles. Focus on identifying their role and contributions to the company.  
+                Information that you should include:
+                - Position, department, some work info
+                - Location, city, country
+                - Standart information about the person that could be useful like summery about and etc.
                 If no information is still found, confirm 'None'."""  
             )  
             res = await self._generate_answer(prompt_retry)  
@@ -106,11 +110,13 @@ class SearchAgent:
 
     async def get_company_info(self, company_name: str):
         prompt = f"""Gather detailed information about the company named {company_name}. Use LinkedIn and official company websites as primary sources. Required details include:  
-        - Company address  
+        - Full Company address, postal code, house number and etc
         - Management (e.g., Managing Director)  
         - Phone  
         - E-mail  
         - Legal registration info (e.g., Amtsgericht, HRB)  
+        - Industry
+        - Url to oficial website.
         - Standart information about the company that could be useful like summery about and etc.
         If no relevant information about {company_name} can be found, return 'None'."""     
         res = await self._generate_answer(prompt)
