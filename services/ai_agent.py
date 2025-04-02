@@ -109,16 +109,31 @@ class SearchAgent:
         return res  
 
     async def get_company_info(self, company_name: str):
-        prompt = f"""Gather detailed information about the company named {company_name}. Use LinkedIn and official company websites as primary sources. Required details include:  
-        - Full Company address, postal code, house number and etc
-        - Management (e.g., Managing Director)  
-        - Phone  
-        - E-mail  
-        - Legal registration info (e.g., Amtsgericht, HRB)  
-        - Industry
-        - Url to oficial website.
-        - Standart information about the company that could be useful like summery about and etc.
-        If no relevant information about {company_name} can be found, return 'None'."""     
+        prompt = f"""  
+Gather detailed information about the company named {company_name}. Use the official company website (including the imprint) and LinkedIn as the primary sources. The required details include:  
+  
+1. Full Company Address:  
+   - Street name and number  
+   - Postal code  
+   - City and country  
+  
+2. Contact Information:  
+   - Phone number  
+   - Email address (found on the imprint on the official website)  
+  
+3. Industry:  
+   - Industry type or sector  
+  
+4. Official Website URL:  
+   - Link to the official website  
+  
+5. General Information:  
+   - A brief summary or overview of the company, including its mission, vision, and key services/products  
+  
+Find as much info as possible that could be useful."""  
+  
+# res = await self._generate_answer(prompt)  
+# return res      
         res = await self._generate_answer(prompt)
         return res
     
