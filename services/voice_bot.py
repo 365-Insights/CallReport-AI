@@ -5,7 +5,7 @@ from .llm_prompts import *
 from .user_state import UserData
 from .ai_agent import SearchAgent
 
-from utils import convert_base64_audio_to_wav, lang2voice, load_preprocess_json, locale2lang
+from utils import convert_base64_audio_to_wav, lang2voice, load_preprocess_json, locale2lang, get_company_imprint
 from uuid import uuid4
 import asyncio
 
@@ -225,7 +225,11 @@ class VoiceBot:
             order += 1
             commands.append(self.gen_voice_play_command(answer, order, user_data.language))
             return  commands, user_data
-        fields = await self._fill_forms_with_extra_info(personal_info, user_form)
+        website = await self._get_website(personal_info)
+        imprint_info = get_company_imprint(website)
+        print("Imprint info: ", imprint_info)
+        full_info = personal_info + "\nImprint info: " + imprint_info
+        fields = await self._fill_forms_with_extra_info(full_info, user_form)
         print("new: ", fields)
         order += 1
         commands.append(self.gen_general_command("updateCurrentContact", value = fields, val_type = "json", order = order))
@@ -438,6 +442,15 @@ class VoiceBot:
     
     async def gen_no_info_found(self, user_msg: str, lang: str = "de-DE"):
         prompt = get_prompt_no_info_found(user_msg, lang)
+        messages = [
+                {"role": "user", "content": prompt}
+            ]
+        message = await self.openai_client.generate_response(messages)
+        return message
+    
+
+    async def _get_website(self, information):
+        prompt = get_website_extraction_prompt(information)
         messages = [
                 {"role": "user", "content": prompt}
             ]

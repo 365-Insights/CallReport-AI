@@ -14,6 +14,7 @@ azureml
 azure-ai-ml
 aiohttp
 azure-ai-projects==1.0.0b7
+beautifulsoup4==4.13.3
 # moviepy==1.0.3 
 # numpy>=1.18.1 
 # imageio>=2.5.0 

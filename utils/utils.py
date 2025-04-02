@@ -6,8 +6,12 @@ import traceback
 import json
 import re
 from ast import literal_eval 
+import requests
 import mimetypes  
   
+from bs4 import BeautifulSoup
+
+
 def sanitize_base64_string(base64_audio_data):  
     """  
     Sanitizes the Base64 string by removing prefixes and fixing padding.  
@@ -123,6 +127,45 @@ def load_preprocess_json(text: str):
         # Raise a descriptive error if parsing fails  
         print(traceback.format_exc())
         raise ValueError(f"Failed to parse JSON: {text}") from e  
+
+
+def get_imprint_url(base_url):  
+    # Try to find common imprint page URLs  
+    common_imprint_paths = ['imprint', 'impressum', 'about', 'legal']  
+    for path in common_imprint_paths:  
+        url = f"{base_url.rstrip('/')}/{path}"  
+        response = requests.get(url)  
+        if response.status_code == 200:  
+            return url  
+    return None
+
+
+def parse_imprint(url):  
+    response = requests.get(url)  
+    soup = BeautifulSoup(response.content, 'html.parser')  
+    text = soup.get_text(separator='\n')  
+    return text  
+
+def preprocess_text(text):  
+    # Remove leading and trailing whitespace  
+    text = text.strip()  
+      
+    # Replace multiple newlines and spaces with a single space  
+    text = ' '.join(text.split())  
+      
+    # Optionally, you can also remove extra spaces between sentences  
+    text = text.replace(' .', '.')  
+      
+    return text
+
+def get_company_imprint(base_url):  
+    imprint_url = get_imprint_url(base_url)  
+    if imprint_url:  
+        imprint_text = parse_imprint(imprint_url)  
+        print(f"Imprint from {imprint_url}")  
+        return preprocess_text(imprint_text)
+    else:  
+        return 
 
 
 with open("utils/lang_voice.json", "r") as f:

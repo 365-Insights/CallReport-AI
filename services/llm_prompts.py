@@ -277,3 +277,14 @@ def get_prompt_no_info_found(user_msg: str, locale: str = "de-DE"):
     """  
     return prompt  
 
+def get_website_extraction_prompt(info: str) -> str:  
+    prompt = f"""  
+    The user has provided the following company information. Extract the URL of the official company website from the provided information.  
+      
+    Provided Information:  
+    {info}  
+  
+    Your response should only contain the URL of the official website and nothing else.  
+    Example of output: 'https://www.microsoft.com/'
+    """  
+    return prompt
