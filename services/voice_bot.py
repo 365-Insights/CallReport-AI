@@ -228,7 +228,7 @@ class VoiceBot:
         website = await self._get_website(personal_info)
         imprint_info = get_company_imprint(website)
         print("Imprint info: ", imprint_info)
-        full_info = personal_info + "\nImprint info: " + imprint_info
+        full_info = personal_info + f"\nWebsite: {website}"+ "\nImprint info: " + imprint_info
         fields = await self._fill_forms_with_extra_info(full_info, user_form)
         print("new: ", fields)
         order += 1
