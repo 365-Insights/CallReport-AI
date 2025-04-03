@@ -294,7 +294,7 @@ class VoiceBot:
             ]
         res = await self.openai_client.generate_response(messages)
         print("FIlled fields", res)
-        return str(res).strip("'<>() ").replace('\'', '\"')
+        return str(res).strip("'<>() ").replace('\'', '\"').replace("Unknown", "")
     
 
     async def _fill_forms_with_extra_info(self, information: str, fields: dict)->str:
@@ -302,7 +302,7 @@ class VoiceBot:
             {"role": "user", "content": prompt_fill_form_fields_internet(fields, information)}
         ]
         res = await self.openai_client.generate_response(messages)
-        res = str(res).strip("'<>() ")
+        res = str(res).strip("'<>() ").replace("Unknown", "")
         # .replace('\'', '\"') 
         # if isinstance(contact_fields, str):
         contact_fields = load_preprocess_json(res)
