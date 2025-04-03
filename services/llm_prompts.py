@@ -47,8 +47,7 @@ classification_system_prompt = """Your task is to analyze the current user messa
 Provide no explanations or additional text, only the name of the selected category.  """
 def get_classification_prompt(user_msg, chat_history):  
     formatted_history = get_formatted_history(chat_history)  
-    ### Chat History:  
-    print("History: ", formatted_history)
+    ### Chat History:   
     classification_prompt = f"""  
 Classify the current user message into one of the predefined categories below. Use the descriptions provided for each category to make an informed decision:  
 - **Create contact**: The user explicitly requests to create a new contact.  
@@ -136,11 +135,12 @@ def get_extract_interests_prompt(user_message, available_interests):
     return prompt
 
 
-def get_summery_prompt(user_text: str, interests: list):
+def get_summery_prompt(user_text: str, interests: list, user_name: str):
     prompt = f"""You are an intelligent assistant. Your task is to generate a summary of a user's interests based on their message and a list of relevant interests. The relevant interests are provided in the following format:
 {interests}
 Given the user's message and the list of relevant interests, generate a summary that includes the names of the relevant interests and incorporates the user's message.
-
+The user's name is '{user_name}'. 
+Don't add anything extra that is not related to user interests even if it is in user message. You need only a summery of user interests/hobbies. 
 User message: {user_text}
 
 Output:

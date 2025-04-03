@@ -9,6 +9,8 @@ from utils import convert_base64_audio_to_wav, lang2voice, load_preprocess_json,
 from uuid import uuid4
 import asyncio
 
+
+name_path = ("GeneralInformation", "FirstName")
 default_fields = {"GeneralInformation": {"Gender": "", "FirstName": "", "LastName": ""},"BusinessInformation": {"Company": "", "City": "", "Country": "", "Street": "", "HouseNumber": "", "PostalCode": "", "AdditionalInformationAddress": "", "PositionLevel": "", "Department": "", "JobTitle": "", "Industry": "", "EducationLevel": "", "PhoneNumber": "", "MobilePhoneNumber": "", "BusinessEmail": ""}, "PersonalInformation": { "City": "", "Country": "", "Street": "", "HouseNumber": "", "PostalCode": "", "AdditionalInfoAddress": "", "PhoneNumber": "", "MobilePhoneNumber": "", "PersonalEMail": "" }}
 required_fields = ["FirstName", "LastName", "Company", "BusinessEmail"]
 
@@ -201,6 +203,7 @@ class VoiceBot:
             commands.append(self.gen_voice_play_command(answer, order, user_data.language))
             return  commands, user_data
         fields = await self._fill_forms_with_extra_info(personal_info, user_form)
+        user_data.history_data["contact_fields"] = fields
         print("new: ", fields)
         order += 1
         commands.append(self.gen_general_command("updateCurrentContact", value = fields, val_type = "json", order = order))
@@ -230,6 +233,7 @@ class VoiceBot:
         print("Imprint info: ", imprint_info)
         full_info = personal_info + f"\nWebsite: {website}"+ "\nImprint info: " + imprint_info
         fields = await self._fill_forms_with_extra_info(full_info, user_form)
+        user_data.history_data["contact_fields"] = fields
         print("new: ", fields)
         order += 1
         commands.append(self.gen_general_command("updateCurrentContact", value = fields, val_type = "json", order = order))
@@ -271,7 +275,16 @@ class VoiceBot:
             interests = await self.extract_list_interests(text, payload)
             order += 1
             extend_commands.append(self.gen_general_command(command_name, interests, "list", order))
-            summery = await self.generate_summery(text, interests)
+            try:
+                contact_fields = user_data.history_data.get("contact_fields", {})
+
+                print(name_path)
+                name = contact_fields[name_path[0]][name_path[1]]
+                print(name)
+            except Exception:
+                print("Couldn't get name from contacts")
+                name = ""
+            summery = await self.generate_summery(text, interests, name)
             order+=1
             extend_commands.append(self.gen_general_command("fillInSummary", summery, "summary", order))
             
@@ -339,9 +352,9 @@ class VoiceBot:
         return result
     
 
-    async def generate_summery(self, user_text: str, interests: list):
+    async def generate_summery(self, user_text: str, interests: list, user_name: str):
         names = [i["_Name"] for i in interests]
-        prompt = get_summery_prompt(user_text, names)
+        prompt = get_summery_prompt(user_text, names, user_name)
          
         messages = [
                 {"role": "user", "content": prompt}
