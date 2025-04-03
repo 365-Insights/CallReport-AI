@@ -37,6 +37,7 @@ def prompt_fill_form_fields(fields):
     extract_form_user_prompt = f"""Return only a JSON object with all attributes in the exact format specified below, without any additional text or modifications: {fields_no_required}.
 Do not include any explanations, return only the JSON object, and do not exclude attributes from the JSON even if they are empty, this is important.
 {field_variations}
+If it is possible fill in some fields with likely information for example determining gender by name, country by city and etc.
 [USER TEXT]: \n"""
     return extract_form_user_prompt
 
@@ -295,6 +296,7 @@ Return only a JSON object with all attributes in the exact format specified belo
 Prioritize existing values in the form if they are already filled. And don't forget to fill summery fields for appropriate section if they are empty. Don't confuse summery in different sections, only fill in one that you have info about. 
 Do not include any explanations, return only the JSON object, and do not exclude attributes from the JSON even if they are empty. This is important.  
 {field_variations}
+If it is possible fill in some fields with likely information for example determining gender by name, country by city and etc.
 Form fields:  
 {fields_no_required}  
 """ 
