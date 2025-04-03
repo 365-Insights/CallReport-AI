@@ -12,7 +12,7 @@ class UserData:
     _last_answer: str = None  
     language: str = "de-DE"  
     chat_history: list = field(default_factory=list)  
-    max_history_length: int = 15  # Maximum length of the chat history  
+    max_history_length: int = 6  # Maximum length of the chat history  
   
     @property  
     def last_message(self):  

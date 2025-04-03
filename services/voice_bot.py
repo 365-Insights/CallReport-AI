@@ -46,7 +46,7 @@ class VoiceBot:
             order = 1
             if msg_type == "Fill insterests": 
                 commands.append(self.gen_general_command("giveListInterests", order = order))
-            elif msg_type in ["Update contact info", "Create contact", "Create report", "Find person information", "Find company information"] \
+            elif msg_type in ["Update info", "Create contact", "Create report", "Find person information", "Find company information"] \
             or (msg_type == "Save" and form_type == "contact"):    
                 commands.append(self.gen_general_command("giveListContactFilds", order = order))
             print("Givelist command")
@@ -143,7 +143,7 @@ class VoiceBot:
             order = res.get("order", 0)
             commands.extend(res["commands"])
 
-        elif msg_type == "Update contact info":
+        elif msg_type == "Update info":
             if isinstance(payload, dict):
                 default_fields = payload
             required_fields = payload["RequiredFields"]

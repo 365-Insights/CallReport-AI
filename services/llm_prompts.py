@@ -47,19 +47,31 @@ Provide no explanations or additional text, only the name of the selected catego
 def get_classification_prompt(user_msg, chat_history):  
     formatted_history = get_formatted_history(chat_history)  
     ### Chat History:  
+    print("History: ", formatted_history)
     classification_prompt = f"""  
 Classify the current user message into one of the predefined categories below. Use the descriptions provided for each category to make an informed decision:  
 - **Create contact**: The user explicitly requests to create a new contact.  
+  Example: "Please create a new contact for John Doe."  
 - **Create report**: The user explicitly requests to generate or create a report.  
-- **Fill interests**: The user mentions interests or preferences that should be recorded or updated, such as hobbies, likes, or areas of focus.  
-- **Update contact info**: The user provides some information. If the intent is not to create a new contact but rather to modify or update existing details or fill in some contact information, classify it here. This includes follow-up messages providing additional details such as 'The name is Cloud Value.' or could be general message "My name is Sasha"
+  Example: "Create a call report"
+- **Update info**: The user provides some information with the intent to modify or update existing contact details (ussualy implicitly), such as names, job titles, company names, addresses, phone numbers, or email addresses. This includes repetitive or follow-up messages providing additional details.
+  Example: "I work at Infopulse as a project manager."    
+  Example: "My new email address is john.doe@example.com." 
+  Example: "My name is Oleksandr"
 - **Add follow-ups**: The user indicates a need to create tasks, reminders, or action items to be followed up on in the future. These could involve scheduling a call, setting a meeting, or assigning a task.  
+- **Fill interests**:  The user talks about personal interests or preferences they want to be recorded or updated, such as hobbies, favorite activities, likes, or focus areas.  
+  Example: "I enjoy hiking and reading."
 - **Find person information**: The user asks to fill information about himself with data from the Internet. This could be a request like 'automatically fill in my personal info' or 'find information about me on the internet.'  
+  Example: "Find information about me"  
 - **Find company information**: The user asks to fill some company information using data from the Internet. This could be a request like 'automatically fill in my company info' or 'find information about my company on the internet.' This does not include follow-up messages providing specific details like company names.  
+  Example: "Find information about company"
+  Example: "Automatically fill in company info"
 - **Cancel**: The user wants to cancel an action, task, or operation. This includes explicit requests to stop, abort, or discontinue a process.  
+   Example: "Cancel everything."  
 - **Save**: The user explicitly asks to save something, such as progress, settings, or changes they’ve made.  
-- **None**: The user’s message does not match any of the above categories or is unclear in intent. Use this category if the message is ambiguous or unrelated to any predefined action.  
-  
+   Example: "Save my progress."  
+- **None**: The user’s message does not match any of the above categories or is unclear in intent. Use this category if the message is ambiguous.  
+   Example: "The weather is great today"
 Use the following context to make your decision:  
 ### Chat History: {formatted_history}  
 **Rules:**  
