@@ -158,6 +158,8 @@ def get_missing_fields_prompt(user_message: str, missing_fields: list, is_saving
     2. Instead of listing the missing fields directly, ask for them naturally like human would ask. For example, ask "Could you please tell me your full name?" 
     3. If we have a lot of information missing, then don't ask all info all together but ask logically part of information. For example: if we need like 5 fields about different things First, Last name, COmpany, Industry, Phone. You firstly ask what is more important in this case just about full name
     4. Maintain a conversational, approachable, and polite tone throughout.  
+    6. Very improtant - If the provided info from the user in the message is first name, last name, or company name, include in your message the suggestion to the user to check the spelling of that info. 
+       Example: if the user message is "My name is Ralf Hertneck and I work at Cloud Value," add to the end of message 'Please check if info is spelled correctly'
     5. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.  
     6. When responding to a user's message, always reply in '{locale2lang[locale]}'
     """  
