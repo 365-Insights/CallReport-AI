@@ -18,7 +18,11 @@ def get_variant_of_fields(full_form):
     for field in variant_fields:
         if not full_form.get(field): 
             continue
-        variations = [i["Value"] for i in full_form.get(field, [])]
+        variation_values = full_form[field]
+        if isinstance(variation_values, str):
+            variation_values = json.loads(variation_values)
+        print("not processed variations: ", variation_values, type(variation_values))
+        variations = [i["Value"] for i in variation_values]
         field = field.replace("Values", "")
         text += f"{field} - {variations}"
     print("Variations: ", text)
