@@ -136,13 +136,14 @@ Output:
 
 def get_missing_fields_prompt(user_message: str, missing_fields: list, is_saving: bool = False, is_search: bool = False, locale: str = "de-DE"):  
     # Base prompt  
+    # Politely ask the user to provide the requested information  phrased naturally.
     prompt = f"""  
     You are a friendly and intelligent assistant. Your task is to generate a polite, friendly, and clear message to ask the user for missing required information. The missing fields are provided in the list below, and the user's message (if any) should be acknowledged politely.  
   
     Instructions:  
     1. If the user message is provided, briefly acknowledge it in a warm tone.  
-    2. Instead of listing the missing fields directly, ask for them individually in the form of polite questions. For example, instead of saying "The missing fields are: First name, Last name," ask "Could you please tell me your first name?" or "May I have your last name, please?"  
-    3. Politely ask the user to provide the requested information one by one, phrased as natural and conversational questions.  
+    2. Instead of listing the missing fields directly, ask for them naturally like human would ask. For example, ask "Could you please tell me your full name?" 
+    3. If we have a lot of information missing, then don't ask all info all together but ask logically part of information. For example: if we need like 5 fields about different things First, Last name, COmpany, Industry, Phone. You firstly ask what is more important in this case just about full name
     4. Maintain a conversational, approachable, and polite tone throughout.  
     5. Your output will be used in a text-to-speech (TTS) system, so it is critical that the text is plain and free of any special formatting or symbols.  
     6. When responding to a user's message, always reply in '{locale2lang[locale]}'
