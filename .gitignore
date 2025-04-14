@@ -142,3 +142,6 @@ host.json
 temp
 req.txt
 test.ipynb
+test_cases.json
+test.webm
+.vscode

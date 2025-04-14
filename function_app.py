@@ -30,14 +30,14 @@ app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 async def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
         req_body = req.get_json()
-        req_type = req_body.get('type')
+        form_data = req_body.get('formData')
         sessionID = req_body.get('sessionID')
         callreportID = req_body.get("callreportID")
         value = req_body.get('value')
         language = req_body.get("language")
         form_type = req_body.get("typeForm")
         try:
-            response = await voice_bot.process_user_message(language, req_type, sessionID, callreportID, value, form_type)
+            response = await voice_bot.process_user_message(language, form_data, sessionID, callreportID, value, form_type)
             # test = {"tets": 123, "test": 23}
         except Exception:
             print("Encountered an exception")

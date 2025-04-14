@@ -21,48 +21,20 @@ class VoiceBot:
         self.ai_agent = SearchAgent()
 
 
-    async def process_user_message(self, lang: str = "de-DE", request_type: str = "", session_id: str = None, callreportID: str = None, payload = {}, form_type: str = ""):
-        file_id = uuid4()        
-        # if session_id:
+    async def process_user_message(self, lang: str = "de-DE", form_data: str = "", session_id: str = None, callreportID: str = None, payload: str = "", form_type: str = ""):
         user_data = self.users_states.get(session_id)
         if not user_data:
             print("Creating new user data")
             user_data = UserData(session_id, "default", {}, "", "", lang)
         last_message = user_data.last_message
         last_answer = user_data.last_answer
-        user_text = "" 
-        if request_type == "record":  
-            audio_path = f"temp/{file_id}.wav"  
-            try:  
-                output_path = convert_base64_audio_to_wav(payload, audio_path)  
-                user_text, _ = fast_speech_recog(output_path, [lang])  
-                user_data.language = lang
-                print("USER TEXT: ", user_text)
-            except Exception as e:  
-                raise RuntimeError(f"Audio processing failed: {str(e)}")  
-            # Classify user message into one of the categories/commands
-            msg_type = await self.classify_user_message(user_text, user_data.chat_history) 
-            print("Put state as: ", msg_type)
-            user_data.state = msg_type
-            commands = []
-            order = 1
-            if msg_type == "Fill insterests": 
-                commands.append(self.gen_general_command("giveListInterests", order = order))
-            elif msg_type in ["Update info", "Create contact", "Create report", "Find person information", "Find company information"] \
-            or (msg_type == "Save" and form_type == "contact"):    
-                commands.append(self.gen_general_command("giveListContactFilds", order = order))
-            print("Givelist command")
-            if commands:
-                user_data.last_message = user_text 
-                self.users_states[session_id] = user_data
-                user_data.last_message = user_text 
-                return self.form_response(commands, user_data.session_id)
-        elif request_type in ["listInterests", "listContactFields"]:  
-            payload = load_preprocess_json(payload)
-            user_text = last_message 
-            msg_type = user_data.state 
-        else:  
-            raise ValueError(f"Unsupported request_type: {request_type}")  
+        user_text = payload
+        form_data = load_preprocess_json(form_data)
+        print("USER TEXT: ", user_text)
+        msg_type = await self.classify_user_message(user_text, user_data.chat_history) 
+        print("Put state as: ", msg_type)
+        user_data.state = msg_type
+        commands = []
         print(f"Classification: {msg_type} | with user text - {user_text}") 
         not_in_call_report =  not callreportID or callreportID.lower() == "null" or callreportID.lower() == "none"
         async with asyncio.TaskGroup() as tg:
@@ -70,7 +42,7 @@ class VoiceBot:
                 self.generate_accompany_message(user_text, msg_type, user_data))
 
             main_task  = tg.create_task(
-                self.generate_answer(user_text, msg_type, request_type, payload, user_data, not_in_call_report, form_type)
+                self.generate_answer(user_text, msg_type, form_data, user_data, not_in_call_report, form_type)
             )
         commands, user_state = main_task.result()
         accompany_text = suggestion_task.result()
@@ -78,10 +50,10 @@ class VoiceBot:
         if not self.check_for_voice_command(commands):
             print("Don't have voice command so add accompany text")
             if commands:
-               orders = commands[-1]["order"]+1 
+               order = commands[-1]["order"]+1 
             else:
-                orders = 1
-            accompany_audio = self.gen_voice_play_command(accompany_text, orders, user_data.language)
+                order = 1
+            accompany_audio = self.gen_voice_play_command(accompany_text, order, user_data.language)
             commands.append(accompany_audio)
         user_state.last_message = user_text 
         self.users_states[session_id] = user_state
@@ -120,13 +92,16 @@ class VoiceBot:
         }
     
 
-    async def generate_answer(self, text, msg_type, request_type: str, payload = None, user_state = None, not_in_call_report = False, form_type = ""):
+    async def generate_answer(self, text: str, msg_type: str, form_data: dict,
+                             user_state = None, not_in_call_report = False, form_type = ""):
         commands = []
         order = 0
         print(msg_type)
         print(not_in_call_report)
+        contact_form = form_data["ContactList"]
+        interest_form = form_data["InterestsList"]
         if msg_type == "Create contact" or msg_type == "Create report":
-            res, user_state = await self._create_contact(text, payload, user_state, request_type, order)
+            res, user_state = await self._create_contact(text, contact_form, user_state, form_data, order)
             commands.extend(res["commands"])
             order = res["order"]
         elif msg_type == "None":
@@ -141,24 +116,20 @@ class VoiceBot:
             order += 1
             commands.append(self.gen_voice_play_command(answer, order, user_state.language))
         elif msg_type == "Fill interests":
-            res = await self.fill_in_interests(text, payload, user_state, request_type, order)
+            res = await self.fill_in_interests(text, interest_form, user_state, form_data, order)
             order = res.get("order", 0)
             commands.extend(res["commands"])
 
         elif msg_type == "Update info":
-            if isinstance(payload, dict):
-                default_fields = payload
-            required_fields = payload["RequiredFields"]
+            required_fields = contact_form["RequiredFields"]
             cmd_name = "updateCurrentContact"
-            contact_fields = await self.extract_info_from_text(text, payload)
+            contact_fields = await self.extract_info_from_text(text, contact_form) 
             user_state, extend_commands = await self.check_info_ask_for_extra_info(text, user_state, cmd_name, contact_fields, required_fields, order)
-            # contact = await self.extract_info_from_text(text, contact_fields)
-            # user_state, new_commands = await self.check_info_ask_for_extra_info(text, user_state, "updateCurrentContact", contact, required_fields, order)
             commands.extend(extend_commands)
         elif msg_type == "Find person information":
-            commands, user_state = await self.fill_internet_personal_info(text, payload, user_state, order)
+            commands, user_state = await self.fill_internet_personal_info(text, contact_form, user_state, order)
         elif msg_type == "Find company information":
-            commands, user_state = await self.fill_internet_company_info(text, payload, user_state, order)
+            commands, user_state = await self.fill_internet_company_info(text, contact_form, user_state, order)
         elif msg_type == "Cancel":
             order += 1
             commands.append(self.gen_general_command("Cancel", order = order))
@@ -166,8 +137,8 @@ class VoiceBot:
             order += 1
             extend_commands = []
             if form_type == "contact": 
-                required_fields = payload["RequiredFields"]
-                user_state, extend_commands = await self.check_info_ask_for_extra_info(text, user_state, "", payload, required_fields, order)
+                required_fields = contact_form["RequiredFields"]
+                user_state, extend_commands = await self.check_info_ask_for_extra_info(text, user_state, "", contact_form, required_fields, order)
             if extend_commands: 
                 commands.extend(extend_commands)
             else: 
@@ -240,7 +211,7 @@ class VoiceBot:
         return commands, user_data
     
 
-    async def _create_contact(self, text: str, payload, user_data: UserData, request_type: str, order = 0):
+    async def _create_contact(self, text: str, payload, user_data: UserData, order = 0):
         global required_fields, default_fields
         extend_commands = []
         is_give_list = 0
@@ -266,27 +237,22 @@ class VoiceBot:
     async def fill_in_interests(self, text: str, payload, user_data: UserData, request_type: str, order = 0):
         extend_commands = []
         interests = None
-        if request_type == "record":
-            command_name = "giveListInterests"
-            order += 1
-            extend_commands.append(self.gen_general_command(command_name, order = order))
-        else:
-            command_name = "fillInterests"
-            interests = await self.extract_list_interests(text, payload)
-            order += 1
-            extend_commands.append(self.gen_general_command(command_name, interests, "list", order))
-            try:
-                contact_fields = user_data.history_data.get("contact_fields", {})
+        command_name = "fillInterests"
+        interests = await self.extract_list_interests(text, payload)
+        order += 1
+        extend_commands.append(self.gen_general_command(command_name, interests, "list", order))
+        try:
+            contact_fields = user_data.history_data.get("contact_fields", {})
 
-                print(name_path)
-                name = contact_fields[name_path[0]][name_path[1]]
-                print(name)
-            except Exception:
-                print("Couldn't get name from contacts")
-                name = ""
-            summery = await self.generate_summery(text, interests, name)
-            order+=1
-            extend_commands.append(self.gen_general_command("fillInSummary", summery, "summary", order))
+            print(name_path)
+            name = contact_fields[name_path[0]][name_path[1]]
+            print(name)
+        except Exception:
+            print("Couldn't get name from contacts")
+            name = ""
+        summery = await self.generate_summery(text, interests, name)
+        order+=1
+        extend_commands.append(self.gen_general_command("fillInSummary", summery, "summary", order))
             
         return {"commands": extend_commands, "interests": interests, "order": order}
     
