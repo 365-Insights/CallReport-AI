@@ -167,6 +167,28 @@ def get_company_imprint(base_url):
     else:  
         return 
 
+def merge_dicts_recursive(dict1: dict, dict2: dict) -> dict:  
+    """Merge dicts with priority values on dict1"""
+    merged = {}  
+  
+    # Get all unique keys from both dictionaries  
+    all_keys = set(dict1.keys()).union(dict2.keys())  
+  
+    for key in all_keys:  
+        value1 = dict1.get(key)  
+        value2 = dict2.get(key)  
+  
+        if isinstance(value1, dict) and isinstance(value2, dict):  
+            # If both values are dictionaries, merge them recursively  
+            merged[key] = merge_dicts_recursive(value1, value2)  
+        elif value1 is not None:  
+            # If the key exists in dict1, use its value  
+            merged[key] = value1  
+        else:  
+            # Otherwise, use the value from dict2  
+            merged[key] = value2  
+  
+    return merged
 
 with open("utils/lang_voice.json", "r") as f:
     lang2voice = json.loads(f.read())
