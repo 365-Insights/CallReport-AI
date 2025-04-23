@@ -145,3 +145,4 @@ test.ipynb
 test_cases.json
 test.webm
 .vscode
+tests/

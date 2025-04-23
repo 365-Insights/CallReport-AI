@@ -7,12 +7,12 @@ from dataclasses import dataclass, field
 class UserData:  
     session_id: str  
     state: str  
-    history_data: dict  
     _last_message: str = None  
     _last_answer: str = None  
     language: str = "de-DE"  
     chat_history: list = field(default_factory=list)  
-    max_history_length: int = 6  # Maximum length of the chat history  
+    max_history_length: int = 5  # Maximum length of the chat history  
+    contacts: dict = field(default_factory=dict)
   
     @property  
     def last_message(self):  

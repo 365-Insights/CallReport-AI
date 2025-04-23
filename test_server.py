@@ -51,6 +51,7 @@ async def process_request(payload: RequestPayload):
         language = payload.language  
         form_type = payload.typeForm 
         form_data = payload.formData
+        print(language)
         # print("VALUE", value)
         # new_path = convert_base64_webm_to_wav(value, "test.wav")
         # print(new_path)

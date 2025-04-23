@@ -3,7 +3,8 @@ from datetime import datetime
 
 from utils import locale2lang
 
-variant_fields = ["IndustryValues"]
+formatted_variations = ""
+variant_fields = ["IndustryList"]
 skip_sections = variant_fields + ["RequiredFields"]
 
 def get_formatted_history(chat_history) -> str:
@@ -13,30 +14,31 @@ def get_formatted_history(chat_history) -> str:
     return formatted_history
 extract_form_system_prompt = "You are a highly accurate and efficient assistant designed to extract specific information from transcribed text. Your task is to extract the following data obtained using the Speech-to-Text service, check the spelling, and consider that it may be a dialogue. Correct first names if they appear unusual or incorrect."
 
-def get_variant_of_fields(full_form):
+def get_variant_of_fields(full_form_data: dict):
     text = ""
+    global formatted_variations
     for field in variant_fields:
-        if not full_form.get(field): 
+        if full_form_data not in full_form_data:
             continue
-        variation_values = full_form[field]
+        variation_values = full_form_data[field]
         if isinstance(variation_values, str):
             variation_values = json.loads(variation_values)
         print("not processed variations: ", variation_values, type(variation_values))
         variations = [i["Value"] for i in variation_values]
         field = field.replace("Values", "")
         text += f"{field} - {variations}"
-    print("Variations: ", text)
+        print("Variations: ", text)
     if text:
         text = "\nCertain fields can have only specific values:\n" + text 
+    formatted_variations = text
     return text
 
 # default_fields = '''"GeneralInformation": {"Gender": "", "FirstName": "", "LastName": ""},"BusinessInformation": {"Company": "", "City": "", "Country": "", "Street": "", "HouseNumber": "", "PostalCode": "", "AdditionalInformationAddress": "", "PositionLevel": "", "Department": "", "JobTitle": "", "Industry": "", "EducationLevel": "", "PhoneNumber": "", "MobilePhoneNumber": "", "BusinessEmail": ""}, "PersonalInformation": { "City": "", "Country": "", "Street": "", "HouseNumber": "", "PostalCode": "", "AdditionalInfoAddress": "", "PhoneNumber": "", "MobilePhoneNumber": "", "PersonalEMail": "" }'''
-def prompt_fill_form_fields(fields):
-    field_variations = get_variant_of_fields(fields)
+def prompt_fill_form_fields(fields): 
     fields_no_required = json.dumps({k: val for k, val in fields.items() if k not in skip_sections}, ensure_ascii=False)
     extract_form_user_prompt = f"""Return only a JSON object with all attributes in the exact format specified below, without any additional text or modifications: {fields_no_required}.
 Do not include any explanations, return only the JSON object, and do not exclude attributes from the JSON even if they are empty, this is important.
-{field_variations}
+{formatted_variations}
 If it is possible fill in some fields with likely information for example determining gender by name, country by city and etc.
 [USER TEXT]: \n"""
     return extract_form_user_prompt
@@ -286,7 +288,6 @@ Now, generate a suggestion for the user:
 
 def prompt_fill_form_fields_internet(fields, internet_info_text):  
     # Create the prompt with instructions for GPT to fill in the fields  
-    field_variations = get_variant_of_fields(fields)
     fields_no_required = json.dumps({k: val for k, val in fields.items() if k not in skip_sections}, ensure_ascii=False)
     # fields_no_required = json.dumps(fields, ensure_ascii=False)  
 
@@ -298,7 +299,7 @@ Given the following information text:
 Return only a JSON object with all attributes in the exact format specified below, without any additional text or modifications. 
 Prioritize existing values in the form if they are already filled. And don't forget to fill summery fields for appropriate section if they are empty. Don't confuse summery in different sections, only fill in one that you have info about. 
 Do not include any explanations, return only the JSON object, and do not exclude attributes from the JSON even if they are empty. This is important.  
-{field_variations}
+{formatted_variations}
 If it is possible fill in some fields with likely information for example determining gender by name, country by city and etc.
 Form fields:  
 {fields_no_required}  
