@@ -13,7 +13,8 @@ class CommandType(Enum):
     ADD_FOLLOW_UPS = "addFollowUps"  
 
 
-@staticmethod
+
+
 def gen_general_command(command_name: str, value = {}, val_type: str = dict, order: int = 1):
     command = {
         "name": command_name,

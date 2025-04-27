@@ -35,11 +35,12 @@ def get_variant_of_fields(full_form_data: dict):
 
 # default_fields = '''"GeneralInformation": {"Gender": "", "FirstName": "", "LastName": ""},"BusinessInformation": {"Company": "", "City": "", "Country": "", "Street": "", "HouseNumber": "", "PostalCode": "", "AdditionalInformationAddress": "", "PositionLevel": "", "Department": "", "JobTitle": "", "Industry": "", "EducationLevel": "", "PhoneNumber": "", "MobilePhoneNumber": "", "BusinessEmail": ""}, "PersonalInformation": { "City": "", "Country": "", "Street": "", "HouseNumber": "", "PostalCode": "", "AdditionalInfoAddress": "", "PhoneNumber": "", "MobilePhoneNumber": "", "PersonalEMail": "" }'''
 def prompt_fill_form_fields(fields): 
-    fields_no_required = json.dumps({k: val for k, val in fields.items() if k not in skip_sections}, ensure_ascii=False)
-    extract_form_user_prompt = f"""Return only a JSON object with all attributes in the exact format specified below, without any additional text or modifications: {fields_no_required}.
-Do not include any explanations, return only the JSON object, and do not exclude attributes from the JSON even if they are empty, this is important.
+    print(formatted_variations)
+    # fields_no_required = json.dumps({k: val for k, val in fields.items() for field in fields if k not in skip_sections}, ensure_ascii=False)
+    extract_form_user_prompt = f"""Return only a JSON array with the provided fields for each contact, without any additional text or modifications. Each element in the JSON array should contain all the attributes in the exact format specified below, even if the fields are empty.  
+{fields} 
+If it is possible, fill in some fields with likely information (e.g. determining gender by name, country by city, etc.). The JSON array may include multiple contacts, based on the user input. Ensure to handle both cases: adding new contacts (with one or more forms) and updating existing contacts.
 {formatted_variations}
-If it is possible fill in some fields with likely information for example determining gender by name, country by city and etc.
 [USER TEXT]: \n"""
     return extract_form_user_prompt
 
@@ -290,7 +291,7 @@ def prompt_fill_form_fields_internet(fields, internet_info_text):
     # Create the prompt with instructions for GPT to fill in the fields  
     fields_no_required = json.dumps({k: val for k, val in fields.items() if k not in skip_sections}, ensure_ascii=False)
     # fields_no_required = json.dumps(fields, ensure_ascii=False)  
-
+    print(formatted_variations)
     extract_form_internet_prompt = f"""  
 Given the following information text:  
   

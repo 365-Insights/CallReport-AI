@@ -49,7 +49,7 @@ class VoiceBot:
             main_task  = tg.create_task(
                 self.generate_answer(user_text, msg_type, form_data, user_data, callreportID, form_type)
             )
-        commands, user_state = main_task.result()
+        commands, user_state, callreportID = main_task.result()
         accompany_text = suggestion_task.result()
         if not self.check_for_voice_command(commands):
             print("Don't have voice command so add accompany text")
@@ -112,8 +112,12 @@ class VoiceBot:
                 print("Found main contact")
                 main_contact = contact
         interest_form = form_data["InterestsList"]
-        if "Create contact" in msg_type or "Create report" in msg_type:
-            res, user_state = await self._create_contact(text, main_contact, user_state, order)
+        if "Create report" in msg_type:
+            command, call_report_id = self._create_call_report()
+            msg_type += "Create contact"
+            commands.append(command)
+        if "Create contact" in msg_type:
+            res, user_state = await self._create_contact(text, contact_forms, user_state, call_report_id, order)
             commands.extend(res["commands"])
             order = res["order"]
         if "None" in msg_type:
@@ -148,25 +152,59 @@ class VoiceBot:
             if form_type == "contact": 
                 required_fields = main_contact["RequiredFields"]
                 user_state, extend_commands = await self.check_info_ask_for_extra_info(text, user_state, "", main_contact, required_fields, order)
-                print("Extended commands: ", extend_commands)
                 if extend_commands and not self.check_for_voice_command(commands): 
                     commands.extend(extend_commands)
                 elif not extend_commands: 
                     commands.append(gen_general_command("saveCurrentDocument", order = order))
         
-        return commands, user_state
+        return commands, user_state, call_report_id
     
 
     async def update_contact_info(self, text, contact_forms, user_data: UserData, call_report_id: str, order = 0):
         contact_fields = await self.extract_info_from_text(text, contact_forms)  
-        old = user_data.contacts.get(call_report_id, {}).get(call_report_id, contact_forms)
-        contact_fields = await self.enrich_contact_from_internet(text, contact_fields, user_data, order, old_contact_info = old)
+        print("USER DATA: ", user_data.contacts)
+        old_contacts = user_data.contacts.get(call_report_id, {})
+        print("OLD contacts")
+        tasks = await self.update_internet_information(contact_fields, old_contacts)
+        if tasks:
+            internet_info = await asyncio.gather(*tasks)
+            internet_info = "\n\n".join(internet_info)
+            contact_fields = await self.extract_info_from_text(internet_info, contact_fields)
         user_data.contacts[call_report_id] = contact_fields
+        # for contact in contact_fields:
+        print(contact_fields)
         user_data, extend_commands = await self.check_info_ask_for_extra_info(text, user_data, "updateCurrentContact", contact_fields, required_fields, order)
         return user_data, extend_commands
     
 
-    async def fill_internet_personal_info(self, user_msg: str, user_form: dict, user_data: UserData, order = 0) -> list:
+    async def update_internet_information(self, contact_fields: dict, old_contacts: dict) -> list:
+        all_companies = []
+        tasks = []
+        if not old_contacts:
+            return 
+        for i, contact in enumerate(contact_fields):
+            contact_id = contact["GeneralInformation"]["ContactID"]
+            company = contact["BusinessInformation"]["Company"]
+            fname, surname = contact["GeneralInformation"]["FirstName"], contact["GeneralInformation"]["LastName"]
+            for i, old_contact in enumerate(old_contacts):
+                old_company = old_contact["BusinessInformation"]["Company"]
+                old_fname, old_surname = old_contact["GeneralInformation"]["FirstName"], old_contact["GeneralInformation"]["LastName"]
+                old_id = old_contact["GeneralInformation"]["ContactID"]
+                if old_id == contact_id:
+                    break
+            if old_id != contact_id:
+                continue
+            if company not in all_companies and old_company != company:
+                print("DIFFERENT COMPANIES")
+                all_companies.append(company)
+                tasks.append(self.fill_internet_company_info(contact))
+            if old_fname != fname or surname != old_surname:
+                print("DIFFERENT NAMES")
+                tasks.append(self.fill_internet_personal_info(contact))
+        return tasks
+
+
+    async def fill_internet_personal_info(self, user_form: dict, fill_form: bool = False) -> list:
         print("FIll internet information")
         first_name, second_name = user_form["GeneralInformation"]["FirstName"], user_form["GeneralInformation"]["LastName"]
         person = first_name + " " + second_name
@@ -177,7 +215,6 @@ class VoiceBot:
         if not all(neccessary_info):
             return  None
         personal_info = await self.ai_agent.get_person_info(person, company, country)
-        print("Personal info: ", personal_info)
         if personal_info == "None":
             # answer = await self.gen_no_info_found(user_msg)
             # user_data.last_answer = answer
@@ -185,58 +222,48 @@ class VoiceBot:
             # commands.append(gen_voice_play_command(answer, order, user_data.language))
             # return  commands, user_data
             return None
+        if not fill_form:
+            return personal_info
         fields = await self._fill_forms_with_extra_info(personal_info, user_form)
         # user_data.history_data["contact_fields"] = fields
-        print("new: ", fields)
-        # order += 1
-        # commands.append(gen_general_command("updateCurrentContact", value = fields, val_type = "json", order = order))
         return fields
     
     
-    async def fill_internet_company_info(self, user_msg: str, user_form: dict, user_data: UserData, order: int = 0):
+    async def fill_internet_company_info(self, user_form: dict, fill_form = False):
         commands = []
         print("FIll internet info about company") 
         company = user_form["BusinessInformation"]["Company"]  
         if not company:
             return 
-            # answer = await self.generate_missing_field_message(user_msg, [company], False, True, user_data = user_data)
-            # order += 1
-            # user_data.last_answer = answer
-            # commands.append(gen_voice_play_command(answer, order, user_data.language))
-            # return  commands, user_data
         personal_info = await self.ai_agent.get_company_info(company)
-        print("Personal info: ", personal_info)
+        # print("Personal info: ", personal_info)
         if personal_info == "None":
-            answer = await self.gen_no_info_found(user_msg)
-            user_data.last_answer = answer
-            order += 1
-            commands.append(gen_voice_play_command(answer, order, user_data.language))
-            return  commands, user_data
+            # answer = await self.gen_no_info_found(user_msg)
+            # user_data.last_answer = answer
+            # order += 1
+            # commands.append(gen_voice_play_command(answer, order, user_data.language))
+            return 
         website = await self._get_website(personal_info)
         imprint_info = get_company_imprint(website)
-        print("Imprint info: ", imprint_info)
+        # print("Imprint info: ", imprint_info)
         full_info = personal_info + f"\nWebsite: {website}"+ "\nImprint info: " + imprint_info
+        if not fill_form:
+            return full_info
         fields = await self._fill_forms_with_extra_info(full_info, user_form)
-        # user_data.history_data["contact_fields"] = fields
-        print("new: ", fields)
-        order += 1
-        # commands.append(gen_general_command("updateCurrentContact", value = fields, val_type = "json", order = order))
-        return fields
+        # print("new: ", fields)
+        return full_info
     
     
-    async def enrich_contact_from_internet(self, text, contact_fields: dict, user_data: UserData, order: int = 0, old_contact_info: dict = None) -> dict:
+    async def enrich_contact_from_internet(self, text, contact_fields: dict, user_data: UserData, order: int = 0,  company: bool = 0, personal: bool = 0) -> dict:
         async with asyncio.TaskGroup() as tg:
-            if old_contact_info: # check if we had changes in info and we need to redo the search
-                comp_change, person_change = self._check_company_change(contact_fields, old_contact_info), self._check_name_changes(contact_fields, old_contact_info)
-            else:
-                comp_change, person_change = True, True
+            comp_change, person_change = company, personal
             if comp_change:
                 company_search_task = tg.create_task( 
-                    self.fill_internet_company_info(text, contact_fields, user_data, order)
+                    self.fill_internet_company_info(contact_fields)
                 )
             if person_change:
                 pers_search_task  = tg.create_task(
-                    self.fill_internet_personal_info(text, contact_fields, user_data, order)
+                    self.fill_internet_personal_info(contact_fields, )
                 )
         company_info, personal_info = None, None
         if comp_change:
@@ -258,23 +285,38 @@ class VoiceBot:
         return complete_info
     
 
-    async def _create_contact(self, text: str, form_data: dict, user_data: UserData, order = 0):
-        global required_fields, default_fields
+    def _create_call_report(self, order = 0):
+        call_report_id = str(uuid4())
+        commands = gen_general_command("CreateCallReport", value = {"CallReportID": call_report_id}, val_type="json", order = order)
+        return commands, call_report_id
+    
+
+    async def _create_contact(self, text: str, form_data: dict, user_data: UserData, call_report_id: str = "", order = 0):
+        global required_fields 
         extend_commands = []
-        is_give_list = 0
         msg = ""
-        print(form_data)
-        print("PAYLOAD: ", form_data)
-        if isinstance(form_data, dict):
-            default_fields = form_data
-        required_fields = form_data["RequiredFields"]
+        required_fields = form_data[0]["RequiredFields"]
         cmd_name = "createContact"
         contact_fields = await self.extract_info_from_text(text, form_data)
-        complete_info = await self.enrich_contact_from_internet(text, contact_fields, user_data, order)
-        print(user_data.contacts, type(user_data.contacts))
-        user_data.contacts[uuid4()] = complete_info
-        user_data, extend_commands = await self.check_info_ask_for_extra_info(text, user_data, cmd_name, contact_fields, required_fields, order)
-        return {"commands": extend_commands, "contact_fields": contact_fields, "order": order, "is_give_list": is_give_list, "answer": msg}, user_data
+        # print("Fields BEFORE: ", contact_fields)
+        all_companies = []
+        tasks = []
+        for i, contact in enumerate(contact_fields):
+            company = contact["BusinessInformation"]["Company"]
+            if company not in all_companies:
+                all_companies.append(company)
+                tasks.append(self.fill_internet_company_info(contact))
+            tasks.append(self.fill_internet_personal_info(contact))
+        internet_info = await asyncio.gather(*tasks)
+        internet_info = "\n\n".join(internet_info)
+        contact_fields = await self.extract_info_from_text(internet_info, contact_fields)
+        contact_fields = self.generate_contacts_ids(contact_fields)
+        # print("ENRICHED CONTACTS: ", type(contact_fields), contact_fields)
+        user_data.contacts[call_report_id] = contact_fields
+        extend_commands.append(gen_general_command(cmd_name, value = contact_fields, val_type = "json", order = order))
+        # for contact in contact_fields:
+        #     user_data, extend_commands = await self.check_info_ask_for_extra_info(text, user_data, cmd_name, contact, required_fields, order)
+        return {"commands": extend_commands, "contact_fields": contact_fields, "order": order,"call_report_id": call_report_id, "answer": msg}, user_data
 
 
     async def fill_in_interests(self, text: str, payload, user_data: UserData, order = 0):
@@ -314,7 +356,6 @@ class VoiceBot:
                 {"role": "system", "content": extract_form_system_prompt},
                 {"role": "user", "content": prompt_fill_form_fields(fields) + text}
             ]
-        print(messages)
         res = await self.openai_client.generate_response(messages)
         print("FIlled fields", res)
         res = str(res).strip("'<>() ").replace('\'', '\"').replace("Unknown", "")
@@ -368,23 +409,23 @@ class VoiceBot:
     async def generate_summery(self, user_text: str, interests: list, user_name: str):
         names = [i["_Name"] for i in interests]
         prompt = get_summery_prompt(user_text, names, user_name)
-         
         messages = [
                 {"role": "user", "content": prompt}
             ]
         summery = await self.openai_client.generate_response(messages)
         return summery
 
-    async def check_info_ask_for_extra_info(self, text, user_data, cmd_name, contact_fields, required_fields, order = 0):
+    async def check_info_ask_for_extra_info(self, text: str, user_data, cmd_name: str, contact_fields: list, required_fields, order = 0):
         extend_commands = []
         print("Required fields: ", required_fields)
-        print(type)
         if isinstance(required_fields[0], dict):
             required_fields = [i["Value"] for i in required_fields]
         if isinstance(contact_fields, str):
             contact_fields = load_preprocess_json(contact_fields)
-        print(contact_fields)
-        missing_fields = self.check_required_filled(contact_fields, required_fields)
+        missing_fields = []
+        for contact in contact_fields:
+            missing_fields.extend(self.check_required_filled(contact, required_fields))
+        missing_fields = list(set(missing_fields))
         print("Missed", missing_fields)
         # add check for same json structure !!!
         if cmd_name:
@@ -393,7 +434,6 @@ class VoiceBot:
         if missing_fields:
             order += 1
             msg = await self.generate_missing_field_message(text, missing_fields, not cmd_name, user_data = user_data)
-            print('gen:', msg)
             extend_commands.append(gen_voice_play_command(msg, order, user_data.language))
             user_data.last_answer = msg
         return user_data, extend_commands
@@ -472,6 +512,14 @@ class VoiceBot:
         message = await self.openai_client.generate_response(messages)
         return message 
     
+
     @staticmethod
     def _is_call_report_nan(callreportID):
         return not callreportID or callreportID.lower() == "null" or callreportID.lower() == "none"
+
+
+    @staticmethod
+    def generate_contacts_ids(contacts: list):
+        for contact in contacts:
+            contact["GeneralInformation"]["ContactID"] = uuid4()
+        return contacts
