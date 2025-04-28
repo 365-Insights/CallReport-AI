@@ -107,11 +107,12 @@ class VoiceBot:
         main_contact = contact_forms[0]
         industry_values = form_data["IndustryList"]
         industry_formated = get_variant_of_fields(industry_values)
-        for contact in contact_forms:
-            if contact["GeneralInformation"]["Main"] == 1:
-                print("Found main contact")
-                main_contact = contact
-        interest_form = form_data["InterestsList"]
+        # for contact in contact_forms:
+        #     if contact["GeneralInformation"]["MainContact"] == 1:
+        #         print("Found main contact")
+        #         main_contact = contact
+        if "InterestsList" in form_data:
+            interest_form = form_data["InterestsList"]
         if "Create report" in msg_type:
             command, call_report_id = self._create_call_report()
             msg_type += "Create contact"
@@ -133,8 +134,9 @@ class VoiceBot:
             commands.append(gen_voice_play_command(answer, order, user_state.language))
         if "Fill interests" in msg_type:
             res = await self.fill_in_interests(text, interest_form, user_state, order)
-            order = res.get("order", 0)
-            commands.extend(res["commands"])
+            if res:
+                order = res.get("order", 0)
+                commands.extend(res["commands"])
         if "Update info" in msg_type:
             required_fields = main_contact["RequiredFields"]
             user_state, extend_commands = await self.update_contact_info(text, main_contact, user_state, call_report_id, order)
@@ -166,6 +168,7 @@ class VoiceBot:
         old_contacts = user_data.contacts.get(call_report_id, {})
         print("OLD contacts")
         tasks = await self.update_internet_information(contact_fields, old_contacts)
+        tasks = [t for t in tasks if t is not None]
         if tasks:
             internet_info = await asyncio.gather(*tasks)
             internet_info = "\n\n".join(internet_info)
@@ -287,7 +290,7 @@ class VoiceBot:
 
     def _create_call_report(self, order = 0):
         call_report_id = str(uuid4())
-        commands = gen_general_command("CreateCallReport", value = {"CallReportID": call_report_id}, val_type="json", order = order)
+        commands = gen_general_command("createCallReport", value = {"CallReportID": call_report_id}, val_type="json", order = order)
         return commands, call_report_id
     
 
@@ -296,7 +299,7 @@ class VoiceBot:
         extend_commands = []
         msg = ""
         required_fields = form_data[0]["RequiredFields"]
-        cmd_name = "createContact"
+        cmd_name = "createContacts"
         contact_fields = await self.extract_info_from_text(text, form_data)
         # print("Fields BEFORE: ", contact_fields)
         all_companies = []
@@ -308,8 +311,10 @@ class VoiceBot:
                 tasks.append(self.fill_internet_company_info(contact))
             tasks.append(self.fill_internet_personal_info(contact))
         internet_info = await asyncio.gather(*tasks)
-        internet_info = "\n\n".join(internet_info)
-        contact_fields = await self.extract_info_from_text(internet_info, contact_fields)
+        internet_info = [t for t in internet_info if t is not None]
+        if internet_info:
+            internet_info = "\n\n".join(internet_info)
+            contact_fields = await self.extract_info_from_text(internet_info, contact_fields)
         contact_fields = self.generate_contacts_ids(contact_fields)
         # print("ENRICHED CONTACTS: ", type(contact_fields), contact_fields)
         user_data.contacts[call_report_id] = contact_fields
@@ -324,22 +329,27 @@ class VoiceBot:
         interests = None
         command_name = "fillInterests"
         interests = await self.extract_list_interests(text, payload)
-        order += 1
-        extend_commands.append(gen_general_command(command_name, interests, "list", order))
-        try:
-            # fix this
-            contact_fields = user_data.contacts
-            print(name_path)
-            name = contact_fields[name_path[0]][name_path[1]]
-            print(name)
-        except Exception:
-            print("Couldn't get name from contacts")
-            name = ""
-        summery = await self.generate_summery(text, interests, name)
-        order+=1
-        extend_commands.append(gen_general_command("fillInSummary", summery, "summary", order))
-            
-        return {"commands": extend_commands, "interests": interests, "order": order}
+        print("Interests: ", interests)
+        if interests:
+            order += 1
+            extend_commands.append(gen_general_command(command_name, interests, "list", order))
+            try:
+                # fix this
+                contact_fields = user_data.contacts
+                print(name_path)
+                name = contact_fields[name_path[0]][name_path[1]]
+                print(name)
+            except Exception:
+                print("Couldn't get name from contacts")
+                name = ""
+            summery = await self.generate_summery(text, interests, name)
+            order+=1
+            extend_commands.append(gen_general_command("fillInSummary", summery, "summary", order))
+            return {"commands": extend_commands, "interests": interests, "order": order}
+        else:
+            print("No relevant interests found. ")
+            return 
+        
     
 
     async def classify_user_message(self, message: str, chat_history)->str:
@@ -521,5 +531,5 @@ class VoiceBot:
     @staticmethod
     def generate_contacts_ids(contacts: list):
         for contact in contacts:
-            contact["GeneralInformation"]["ContactID"] = uuid4()
+            contact["GeneralInformation"]["ContactID"] = str(uuid4())
         return contacts

@@ -105,14 +105,16 @@ def load_preprocess_json(text: str):
     # Step 1: Remove outer quotes if present  
     if text.startswith('"') and text.endswith('"'):  
         text = text[1:-1]  
-  
+    # text = text.replace("false", "0").replace("true", "1")
     # Step 2: Normalize escaped characters (e.g., \\\" -> \")  
+    text = text.replace("\\\\\\", "\\")
     text = text.replace('\\"', '"').replace('\\\\', '\\')  
     # text = str(text).strip("'<>()\\ \"").replace('\'', '\"')
     text = re.sub(r'(?<=["])\'(?=[^"]*["])', '"', text)
     # print("END", text)
     # Step 3: Attempt to parse the cleaned JSON string  
-    try:  
+    try: 
+        print("DEBUG: ", text) 
         parsed = json.loads(text)  
 
         # Step 4: If the result is still a string (e.g., nested JSON), parse it again  
