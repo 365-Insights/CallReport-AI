@@ -169,8 +169,8 @@ class VoiceBot:
         old_contacts = user_data.contacts.get(call_report_id, {})
         print("OLD contacts")
         tasks = await self.update_internet_information(contact_fields, old_contacts)
-        tasks = [t for t in tasks if t is not None]
         if tasks:
+            tasks = [t for t in tasks if t is not None]
             internet_info = await asyncio.gather(*tasks)
             internet_info = "\n\n".join(internet_info)
             contact_fields = await self.extract_info_from_text(internet_info, contact_fields)
@@ -320,6 +320,17 @@ class VoiceBot:
         # print("ENRICHED CONTACTS: ", type(contact_fields), contact_fields)
         user_data.contacts[call_report_id] = contact_fields
         extend_commands.append(gen_general_command(cmd_name, value = contact_fields, val_type = "json", order = order))
+        main = False
+        for contact in form_data:
+            main = main or contact["GeneralInformation"]["MainContact"]
+        print("MAIN: ", main)
+        if not main:
+            for contact in contact_fields:
+                main = main or contact["GeneralInformation"]["MainContact"]
+        if not main:
+            contact_fields[0]["GeneralInformation"]["MainContact"] = True
+        print("MAIN: ", main)
+        
         # for contact in contact_fields:
         #     user_data, extend_commands = await self.check_info_ask_for_extra_info(text, user_data, cmd_name, contact, required_fields, order)
         return {"commands": extend_commands, "contact_fields": contact_fields, "order": order,"call_report_id": call_report_id, "answer": msg}, user_data
