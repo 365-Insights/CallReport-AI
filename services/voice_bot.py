@@ -51,6 +51,9 @@ class VoiceBot:
             )
         commands, user_state, callreportID = main_task.result()
         accompany_text = suggestion_task.result()
+
+        commands = validate_commands(commands)
+
         if not self.check_for_voice_command(commands):
             print("Don't have voice command so add accompany text")
             if commands:
@@ -145,10 +148,10 @@ class VoiceBot:
         if "Add follow-ups" in msg_type:
             follow_apps = await self.extract_follow_ups(text)
             order += 1
-            commands.append(gen_general_command("addFollowUps", follow_apps, "list", order))
+            commands.append(gen_general_command(CommandType.ADD_FOLLOW_UPS, follow_apps, "list", order))
         if "Cancel" in msg_type:
             order += 1
-            commands.append(gen_general_command("Cancel", order = order))
+            commands.append(gen_general_command(CommandType.CANCEL, order = order))
         if "Save" in msg_type:
             order += 1
             extend_commands = []
@@ -158,7 +161,7 @@ class VoiceBot:
                 if extend_commands and not self.check_for_voice_command(commands): 
                     commands.extend(extend_commands)
                 elif not extend_commands: 
-                    commands.append(gen_general_command("saveCurrentDocument", order = order))
+                    commands.append(gen_general_command(CommandType.SAVE, order = order))
         
         return commands, user_state, call_report_id
     
@@ -177,7 +180,7 @@ class VoiceBot:
         user_data.contacts[call_report_id] = contact_fields
         # for contact in contact_fields:
         print(contact_fields)
-        user_data, extend_commands = await self.check_info_ask_for_extra_info(text, user_data, "updateCurrentContact", contact_fields, required_fields, order)
+        user_data, extend_commands = await self.check_info_ask_for_extra_info(text, user_data, CommandType.UPDATE_CONTACT, contact_fields, required_fields, order)
         return user_data, extend_commands
     
 
@@ -211,6 +214,8 @@ class VoiceBot:
     async def fill_internet_personal_info(self, user_form: dict, fill_form: bool = False) -> list:
         print("FIll internet information")
         first_name, second_name = user_form["GeneralInformation"]["FirstName"], user_form["GeneralInformation"]["LastName"]
+        if not all([first_name, second_name]):
+            return 
         person = first_name + " " + second_name
 
         company = user_form["BusinessInformation"]["Company"] 
@@ -291,7 +296,7 @@ class VoiceBot:
 
     def _create_call_report(self, order = 0):
         call_report_id = str(uuid4())
-        commands = gen_general_command("createCallReport", value = {"CallReportID": call_report_id}, val_type="json", order = order)
+        commands = gen_general_command(CommandType.CREATE_REPORT, value = {"CallReportID": call_report_id}, val_type="json", order = order)
         return commands, call_report_id
     
 
@@ -300,7 +305,7 @@ class VoiceBot:
         extend_commands = []
         msg = ""
         required_fields = form_data[0]["RequiredFields"]
-        cmd_name = "createContacts"
+        cmd_name = CommandType.CREATE_CONTACT
         contact_fields = await self.extract_info_from_text(text, form_data)
         # print("Fields BEFORE: ", contact_fields)
         all_companies = []
@@ -323,14 +328,11 @@ class VoiceBot:
         main = False
         for contact in form_data:
             main = main or contact["GeneralInformation"]["MainContact"]
-        print("MAIN: ", main)
         if not main:
             for contact in contact_fields:
                 main = main or contact["GeneralInformation"]["MainContact"]
-        if not main:
+        if not main and contact_fields:
             contact_fields[0]["GeneralInformation"]["MainContact"] = True
-        print("MAIN: ", main)
-        
         # for contact in contact_fields:
         #     user_data, extend_commands = await self.check_info_ask_for_extra_info(text, user_data, cmd_name, contact, required_fields, order)
         return {"commands": extend_commands, "contact_fields": contact_fields, "order": order,"call_report_id": call_report_id, "answer": msg}, user_data
@@ -339,12 +341,11 @@ class VoiceBot:
     async def fill_in_interests(self, text: str, payload, user_data: UserData, order = 0):
         extend_commands = []
         interests = None
-        command_name = "fillInterests"
         interests = await self.extract_list_interests(text, payload)
         print("Interests: ", interests)
         if interests:
             order += 1
-            extend_commands.append(gen_general_command(command_name, interests, "list", order))
+            extend_commands.append(gen_general_command(CommandType.FILL_INTERESTS, interests, "list", order))
             try:
                 # fix this
                 contact_fields = user_data.contacts
@@ -356,7 +357,7 @@ class VoiceBot:
                 name = ""
             summery = await self.generate_summery(text, interests, name)
             order+=1
-            extend_commands.append(gen_general_command("fillInSummary", summery, "summary", order))
+            extend_commands.append(gen_general_command(CommandType.FILL_IN_SUMMARY, summery, "summary", order))
             return {"commands": extend_commands, "interests": interests, "order": order}
         else:
             print("No relevant interests found. ")
