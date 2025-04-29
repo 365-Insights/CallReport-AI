@@ -45,51 +45,61 @@ If it is possible, fill in some fields with likely information (e.g. determining
     return extract_form_user_prompt
 
 
-classification_system_prompt = """Your task is to analyze the current user message in the context of the conversation, which includes the **last bot response** and the **previous user message**. Based on this context, determine the most appropriate category from the list above. Always return **exactly one category** from the list, even if the message appears ambiguous. If the current user message does not clearly fit any of the categories, return "None."   
-  
-Provide no explanations or additional text, only the name of the selected category.  """
+classification_system_prompt = """Your task is to analyze the current user message in the context of the conversation, which includes the **last bot response** and the **previous user message**. Based on this context, determine the most appropriate categories from the list above. Always return all applicable categories in a Python list, even if the message appears ambiguous. If the current user message does not clearly fit any of the categories, return ["None"].     
+    
+Provide no explanations or additional text, only the names of the selected categories in a Python list. """
 def get_classification_prompt(user_msg, chat_history):  
     formatted_history = get_formatted_history(chat_history)  
     ### Chat History:   
-    classification_prompt = f"""    
-Classify the current user message into one or more of the predefined categories below. Use the descriptions provided for each category to make an informed decision:    
+    classification_prompt = f"""Your task is to analyze the current user message in the context of the conversation, which includes the **last bot response** and the **previous user message**. Based on this context, determine the most appropriate categories from the list above. Always return all applicable categories in a Python list, even if the message appears ambiguous. If the current user message does not clearly fit any of the categories, return ["None"].     
+    
+Provide no explanations or additional text, only the names of the selected categories in a Python list. """  
   
-- **Create contact**: The user explicitly requests to create a new contact.    
-  Example: "Please create a new contact for John Doe."    
-- **Create report**: The user explicitly requests to create a call report or just describes the call that just happened
-  Example: "Write a recap of our discussion with Paolo"    
-  Example: "Generate a report for the last meeting with Paolo"
-  Example: "I need a summary of the conversation with Paolo"
-- **Update info**: The user provides some information with the intent to modify or update existing contact details (usually implicitly), such as names, job titles, company names, addresses, phone numbers, or email addresses. This includes repetitive or follow-up messages providing additional details.    
-  Example: "I work at Infopulse as a project manager."    
-  Example: "My new email address is john.doe@example.com."    
-  Example: "My name is Oleksandr"    
-- **Add follow-ups**: The user indicates a need to create tasks, reminders, or action items or future meetings to be followed up on in the future. These could involve scheduling a call, setting a meeting, or assigning a task.    
-- **Fill interests**: The user talks about personal interests or preferences they want to be recorded or updated, such as hobbies, favorite activities, likes, or focus areas.    
-  Example: "I enjoy hiking and reading."       
-- **Cancel**: The user wants to cancel an action, task, or operation. This includes explicit requests to stop, abort, or discontinue a process.    
-  Example: "Cancel everything."    
-- **Save**: The user explicitly asks to save something, such as progress, settings, or changes they’ve made.    
-  Example: "Save my progress."    
-- **None**: The user’s message does not match any of the above categories or is unclear in intent. Use this category if the message is ambiguous.    
-  Example: "The weather is great today"    
-Example for messages with multiple categories:
- User Message: 'I had been in a meeting with Alexandr Diakon from Infopulse. He is interested in new AI technologies and I would like to schedule further appointments on Friday 25th about the MVP plan.'
- Expected Output: '["Create report", "Create contact", "Add follow-ups", "Fill interests"]'
- User Message: 'He is into AI and reading, and I would like you to save this in my profile for future reference.'
- Expected Output: '["Fill interests", "Save"]'
- User Message: 'Generate a report for the last meeting with Paolo from Cloud Value'
- Expected Output: '["Create report", "Create contact"]'
- User Message: 'I have been to a meeting with Oleksandr Diakon, we discussed new PowerApps project. I want to have meeting with him next Friday at 5 pm.'
- Expected Output: '["Create report", "Create contact", "Add follow-ups"]'
- Use the following context to make your decision:    
-### Chat History: {formatted_history}    
-**Rules:**    
-1. Return **a Python list** containing one or more categories that apply to the current user message.    
-2. If the current user message is unclear or does not match any category, return ["None"].    
-3. Provide no additional text or explanation—only the list of selected categories.    
-  
-Current user message: '{user_msg}'    
+def get_classification_prompt(user_msg, chat_history):    
+    formatted_history = get_formatted_history(chat_history)    
+    ### Chat History:     
+    classification_prompt = f"""      
+Classify the current user message into one or more of the predefined categories below. Use the descriptions provided for each category to make an informed decision:      
+- **Create report**: The user explicitly requests to create a call report or just describes the call that just happened  
+  Example: "Write a recap of our discussion with Paolo"      
+  Example: "Generate a report for the last meeting with Paolo"  
+  Example: "I need a summary of the conversation with Paolo"  
+- **Create contact**: The user explicitly requests to create a new contact. Lots of time people will talk more about a call/meeting (usually falls in category 'create call report') that happened and just mention some names  
+  Example: "Please create a new contact for John Doe."     
+  Example: "I talked with Peter Kovalenko"   
+- **Update info**: The user provides some information with the intent to modify or update existing contact details (usually implicitly), such as names, job titles, company names, addresses, phone numbers, or email addresses. This includes repetitive or follow-up messages providing additional details.      
+  Example: "I work at Infopulse as a project manager."      
+  Example: "My new email address is john.doe@example.com."      
+  Example: "Update company of Pavel to Microsoft"      
+- **Add follow-ups**: The user indicates a need to create tasks, reminders, or action items or future meetings to be followed up on in the future. These could involve scheduling a call, setting a meeting, or assigning a task.      
+- **Fill interests**: The user talks about personal interests or preferences they want to be recorded or updated, such as hobbies, favorite activities, likes, or focus areas.      
+  Example: "I enjoy AI and Machine Learning."    
+  Example: "He is interested in Python and Golang development."       
+- **Cancel**: The user wants to cancel an action, task, or operation. This includes explicit requests to stop, abort, or discontinue a process.      
+  Example: "Cancel everything."      
+- **Save**: The user explicitly asks to save something, such as progress, settings, or changes they’ve made.      
+  Example: "Save my progress."      
+- **None**: The user’s message does not match any of the above categories or is unclear in intent. Use this category if the message is ambiguous.      
+  Example: "The weather is great today"      
+Example for messages with multiple categories:  
+ User Message: 'I had been in a meeting with Alexandr Diakon from Infopulse. He is interested in new AI technologies and I would like to schedule further appointments on Friday 25th about the MVP plan.'  
+ Expected Output: '["Create report", "Create contact", "Add follow-ups", "Fill interests"]'  
+ User Message: 'He likes AI and reading, and I would like you to save this in my profile for future reference.'  
+ Expected Output: '["Fill interests", "Save"]'  
+ User Message: 'Generate a report for the last meeting with Paolo from Cloud Value'  
+ Expected Output: '["Create report", "Create contact"]'  
+ User Message: 'I have been to a meeting with Oleksandr Diakon, we discussed new PowerApps project. I want to have meeting with him next Friday at 5 pm.'  
+ Expected Output: '["Create report", "Create contact", "Add follow-ups"]'  
+ User Message: 'Generate a formatted report based on the conversation with Paolo'  
+ Expected Output: '["Create report", "Create Contact"]'  
+ Use the following context to make your decision:      
+### Chat History: {formatted_history}      
+**Rules:**      
+1. Return **a Python list** containing one or more categories that apply to the current user message.      
+2. If the current user message is unclear or does not match any category, return ["None"].      
+3. Provide no additional text or explanation—only the list of selected categories.      
+    
+Current user message: '{user_msg}'   
 """  
     return classification_prompt  
 
