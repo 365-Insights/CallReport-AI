@@ -80,7 +80,9 @@ Example for messages with multiple categories:
  Expected Output: '["Fill interests", "Save"]'
  User Message: 'Generate a report for the last meeting with Paolo from Cloud Value'
  Expected Output: '["Create report", "Create contact"]'
-Use the following context to make your decision:    
+ User Message: 'I have been to a meeting with Oleksandr Diakon, we discussed new PowerApps project. I want to have meeting with him next Friday at 5 pm.'
+ Expected Output: '["Create report", "Create contact", "Add follow-ups"]'
+ Use the following context to make your decision:    
 ### Chat History: {formatted_history}    
 **Rules:**    
 1. Return **a Python list** containing one or more categories that apply to the current user message.    
