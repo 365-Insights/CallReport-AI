@@ -115,7 +115,8 @@ class VoiceBot:
             interest_form = form_data["InterestsList"]
         if "Create report" in msg_type:
             command, call_report_id = self._create_call_report()
-            msg_type += "Create contact"
+            order += 1
+            # msg_type += "Create contact"
             commands.append(command)
         if "Create contact" in msg_type:
             res, user_state = await self._create_contact(text, contact_forms, user_state, call_report_id, order)

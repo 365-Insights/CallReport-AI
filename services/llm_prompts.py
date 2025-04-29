@@ -57,7 +57,9 @@ Classify the current user message into one or more of the predefined categories 
 - **Create contact**: The user explicitly requests to create a new contact.    
   Example: "Please create a new contact for John Doe."    
 - **Create report**: The user explicitly requests to create a call report or just describes the call that just happened
-  Example: ""    
+  Example: "Write a recap of our discussion with Paolo"    
+  Example: "Generate a report for the last meeting with Paolo"
+  Example: "I need a summary of the conversation with Paolo"
 - **Update info**: The user provides some information with the intent to modify or update existing contact details (usually implicitly), such as names, job titles, company names, addresses, phone numbers, or email addresses. This includes repetitive or follow-up messages providing additional details.    
   Example: "I work at Infopulse as a project manager."    
   Example: "My new email address is john.doe@example.com."    
@@ -73,9 +75,11 @@ Classify the current user message into one or more of the predefined categories 
   Example: "The weather is great today"    
 Example for messages with multiple categories:
  User Message: 'I had been in a meeting with Alexandr Diakon from Infopulse. He is interested in new AI technologies and I would like to schedule further appointments on Friday 25th about the MVP plan.'
- Expected Output: '["Create report", "Add follow-ups", "Fill interests"]'
+ Expected Output: '["Create report", "Create contact", "Add follow-ups", "Fill interests"]'
  User Message: 'He is into AI and reading, and I would like you to save this in my profile for future reference.'
  Expected Output: '["Fill interests", "Save"]'
+ User Message: 'Generate a report for the last meeting with Paolo from Cloud Value'
+ Expected Output: '["Create report", "Create contact"]'
 Use the following context to make your decision:    
 ### Chat History: {formatted_history}    
 **Rules:**    
