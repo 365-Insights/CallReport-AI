@@ -48,7 +48,7 @@ class VoiceBot:
             )
 
             main_task  = tg.create_task(
-                self.generate_answer(user_text, msg_type, form_data, user_data, callreportID, form_type)
+                self.generate_answer(user_text, msg_type, form_data, user_data, callreportID)
             )
         commands, user_state, callreportID = main_task.result()
         accompany_text = suggestion_task.result()
@@ -102,7 +102,7 @@ class VoiceBot:
     
 
     async def generate_answer(self, text: str, msg_type: str, form_data: dict,
-                             user_state = None, call_report_id:str = False, form_type = ""):
+                             user_state = None, call_report_id:str = False):
         global industry_formated, required_fields
         commands = []
         order = 0
@@ -156,13 +156,12 @@ class VoiceBot:
         if "Save" in msg_type:
             order += 1
             extend_commands = []
-            if form_type == "contact": 
-                required_fields = main_contact["RequiredFields"]
-                user_state, extend_commands = await self.check_info_ask_for_extra_info(text, user_state, "", main_contact, required_fields, order)
-                if extend_commands and not self.check_for_voice_command(commands): 
-                    commands.extend(extend_commands)
-                elif not extend_commands: 
-                    commands.append(gen_general_command(CommandType.SAVE, order = order))
+            required_fields = main_contact["RequiredFields"]
+            user_state, extend_commands = await self.check_info_ask_for_extra_info(text, user_state, "", contact_forms, required_fields, order)
+            if extend_commands and not self.check_for_voice_command(commands): 
+                commands.extend(extend_commands)
+            elif not extend_commands: 
+                commands.append(gen_general_command(CommandType.SAVE, order = order))
         
         return commands, user_state, call_report_id
     
@@ -467,6 +466,7 @@ class VoiceBot:
         missing_fields = []
         for full_name in req_fields:
             theme, field_name = full_name.split("_")
+            print(full_form)
             if not full_form[theme][field_name]:
                 print("Missing value: ", theme, field_name)
                 missing_fields.append(f"{field_name} in section {theme}")

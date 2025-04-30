@@ -34,7 +34,6 @@ class RequestPayload(BaseModel):
     sessionID: str  
     callreportID: str
     value: str  
-    typeForm: str
     formData: str
   
 @app.post("/api/req")  
@@ -49,7 +48,7 @@ async def process_request(payload: RequestPayload):
         callreportID = payload.callreportID
         value = payload.value  
         language = payload.language  
-        form_type = payload.typeForm 
+        # form_type = payload.typeForm 
         form_data = payload.formData
         print(language)
         # print("VALUE", value)
@@ -57,7 +56,7 @@ async def process_request(payload: RequestPayload):
         # print(new_path)
         # Process the user message using VoiceBot  
         try:
-            response = await voice_bot.process_user_message(language, form_data, sessionID, callreportID, value, form_type)
+            response = await voice_bot.process_user_message(language, form_data, sessionID, callreportID, value)
             # test = {"tets": 123, "test": 23}
         except Exception:
             print("Encountered an exception")
