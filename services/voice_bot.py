@@ -110,7 +110,7 @@ class VoiceBot:
         contact_forms = form_data["ContactList"]
         main_contact = contact_forms[0]
         industry_values = form_data["IndustryList"]
-        industry_formated = get_variant_of_fields(industry_values)
+        industry_formated = get_variant_of_fields(form_data)
         # for contact in contact_forms:
         #     if contact["GeneralInformation"]["MainContact"] == 1:
         #         print("Found main contact")
@@ -466,8 +466,7 @@ class VoiceBot:
         missing_fields = []
         for full_name in req_fields:
             theme, field_name = full_name.split("_")
-            print(full_form)
-            if not full_form[theme][field_name]:
+            if not full_form[theme][field_name]:    
                 print("Missing value: ", theme, field_name)
                 missing_fields.append(f"{field_name} in section {theme}")
             else:

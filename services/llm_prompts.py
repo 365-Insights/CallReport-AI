@@ -18,19 +18,18 @@ def get_variant_of_fields(full_form_data: dict):
     text = ""
     global formatted_variations
     for field in variant_fields:
-        if full_form_data not in full_form_data:
+        if field not in full_form_data:
             continue
         variation_values = full_form_data[field]
         if isinstance(variation_values, str):
             variation_values = json.loads(variation_values)
-        print("not processed variations: ", variation_values, type(variation_values))
         variations = [i["Value"] for i in variation_values]
         field = field.replace("Values", "")
         text += f"{field} - {variations}"
-        print("Variations: ", text)
     if text:
         text = "\nCertain fields can have only specific values:\n" + text 
     formatted_variations = text
+    print("Updated Variation  fields:", formatted_variations)
     return text
 
 # default_fields = '''"GeneralInformation": {"Gender": "", "FirstName": "", "LastName": ""},"BusinessInformation": {"Company": "", "City": "", "Country": "", "Street": "", "HouseNumber": "", "PostalCode": "", "AdditionalInformationAddress": "", "PositionLevel": "", "Department": "", "JobTitle": "", "Industry": "", "EducationLevel": "", "PhoneNumber": "", "MobilePhoneNumber": "", "BusinessEmail": ""}, "PersonalInformation": { "City": "", "Country": "", "Street": "", "HouseNumber": "", "PostalCode": "", "AdditionalInfoAddress": "", "PhoneNumber": "", "MobilePhoneNumber": "", "PersonalEMail": "" }'''
