@@ -320,7 +320,7 @@ class VoiceBot:
         internet_info = [t for t in internet_info if t is not None]
         if internet_info:
             internet_info = "\n\n".join(internet_info)
-            contact_fields = await self.extract_info_from_text(internet_info, contact_fields)
+            contact_fields = await self._fill_forms_with_extra_info(internet_info, contact_fields)
         contact_fields = self.generate_contacts_ids(contact_fields)
         # print("ENRICHED CONTACTS: ", type(contact_fields), contact_fields)
         user_data.contacts[call_report_id] = contact_fields

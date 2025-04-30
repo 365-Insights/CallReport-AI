@@ -35,9 +35,14 @@ def get_variant_of_fields(full_form_data: dict):
 # default_fields = '''"GeneralInformation": {"Gender": "", "FirstName": "", "LastName": ""},"BusinessInformation": {"Company": "", "City": "", "Country": "", "Street": "", "HouseNumber": "", "PostalCode": "", "AdditionalInformationAddress": "", "PositionLevel": "", "Department": "", "JobTitle": "", "Industry": "", "EducationLevel": "", "PhoneNumber": "", "MobilePhoneNumber": "", "BusinessEmail": ""}, "PersonalInformation": { "City": "", "Country": "", "Street": "", "HouseNumber": "", "PostalCode": "", "AdditionalInfoAddress": "", "PhoneNumber": "", "MobilePhoneNumber": "", "PersonalEMail": "" }'''
 def prompt_fill_form_fields(fields): 
     print(formatted_variations)
-    # fields_no_required = json.dumps({k: val for k, val in fields.items() for field in fields if k not in skip_sections}, ensure_ascii=False)
+    no_useless_fields = []
+    for contact in fields:
+        cont = {k: val for k, val in contact.items() for field in fields if k not in skip_sections}
+        no_useless_fields.append(cont)
+    no_useless_fields = json.dumps(no_useless_fields, ensure_ascii=False)
+    # print("NO Useless fields:", no_useless_fields)
     extract_form_user_prompt = f"""Return only a JSON array with the provided fields for each contact, without any additional text or modifications. Each element in the JSON array should contain all the attributes in the exact format specified below, even if the fields are empty.  
-{fields} 
+{no_useless_fields} 
 If it is possible, fill in some fields with likely information (e.g. determining gender by name, country by city, etc.). The JSON array may include multiple contacts, based on the user input. Ensure to handle both cases: adding new contacts (with one or more forms) and updating existing contacts.
 {formatted_variations}
 [USER TEXT]: \n"""
@@ -298,24 +303,29 @@ Now, generate a suggestion for the user:
 
 def prompt_fill_form_fields_internet(fields, internet_info_text):  
     # Create the prompt with instructions for GPT to fill in the fields  
-    fields_no_required = json.dumps({k: val for k, val in fields.items() if k not in skip_sections}, ensure_ascii=False)
-    # fields_no_required = json.dumps(fields, ensure_ascii=False)  
     print(formatted_variations)
-    extract_form_internet_prompt = f"""  
-Given the following information text:  
+    no_useless_fields = []
+    for contact in fields:
+        cont = {k: val for k, val in contact.items() for field in fields if k not in skip_sections}
+        no_useless_fields.append(cont)
+    no_useless_fields = json.dumps(no_useless_fields, ensure_ascii=False)
+    # print("NO Useless fields:", no_useless_fields)
+    extract_form_internet_prompt = f"""    
+    Given the following information about people and companies:    
+    "{internet_info_text}"    
   
-"{internet_info_text}"  
+    Return only a JSON array with the provided fields for each contact, without any additional text or modifications. Each element in the JSON array should contain all the attributes in the exact format specified below, even if the fields are empty.   
   
-Return only a JSON object with all attributes in the exact format specified below, without any additional text or modifications. 
-Prioritize existing values in the form if they are already filled. And don't forget to fill summery fields for appropriate section if they are empty. Don't confuse summery in different sections, only fill in one that you have info about. 
-Do not include any explanations, return only the JSON object, and do not exclude attributes from the JSON even if they are empty. This is important.  
-{formatted_variations}
-If it is possible fill in some fields with likely information for example determining gender by name, country by city and etc.
-Form fields:  
-{fields_no_required}  
-""" 
-    # print("FULLL PROMPT:", extract_form_internet_prompt)
-    return extract_form_internet_prompt 
+    - If possible, fill in some fields with likely information (e.g., determining gender by name, country by city, etc.).   
+    - Prioritize existing values in the form if they are already filled.   
+    - Ensure that **company-related information (e.g., address, email, website, etc.) is consistently applied to all contacts associated with the same company.**   
+    - Don't forget to fill summary fields for the appropriate section if they are empty. Don't confuse summaries across sections; only fill in the one that has relevant info.  In business section summery is about company, in personal section about person
+    - Do not include any explanations, return only the JSON object, and do not exclude attributes from the JSON even if they are empty. This is important.  
+    - {formatted_variations}
+    Form fields:    
+    {no_useless_fields}    
+    """  
+    return extract_form_internet_prompt  
 
 def get_prompt_no_info_found(user_msg: str, locale: str = "de-DE"):  
     prompt = f"""  
