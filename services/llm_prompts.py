@@ -34,7 +34,6 @@ def get_variant_of_fields(full_form_data: dict):
 
 # default_fields = '''"GeneralInformation": {"Gender": "", "FirstName": "", "LastName": ""},"BusinessInformation": {"Company": "", "City": "", "Country": "", "Street": "", "HouseNumber": "", "PostalCode": "", "AdditionalInformationAddress": "", "PositionLevel": "", "Department": "", "JobTitle": "", "Industry": "", "EducationLevel": "", "PhoneNumber": "", "MobilePhoneNumber": "", "BusinessEmail": ""}, "PersonalInformation": { "City": "", "Country": "", "Street": "", "HouseNumber": "", "PostalCode": "", "AdditionalInfoAddress": "", "PhoneNumber": "", "MobilePhoneNumber": "", "PersonalEMail": "" }'''
 def prompt_fill_form_fields(fields): 
-    print(formatted_variations)
     no_useless_fields = []
     for contact in fields:
         cont = {k: val for k, val in contact.items() for field in fields if k not in skip_sections}
@@ -303,7 +302,6 @@ Now, generate a suggestion for the user:
 
 def prompt_fill_form_fields_internet(fields, internet_info_text):  
     # Create the prompt with instructions for GPT to fill in the fields  
-    print(formatted_variations)
     no_useless_fields = []
     for contact in fields:
         cont = {k: val for k, val in contact.items() for field in fields if k not in skip_sections}

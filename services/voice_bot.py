@@ -144,7 +144,7 @@ class VoiceBot:
                 commands.extend(res["commands"])
         if "Update info" in msg_type:
             required_fields = main_contact["RequiredFields"]
-            user_state, extend_commands = await self.update_contact_info(text, main_contact, user_state, call_report_id, order)
+            user_state, extend_commands = await self.update_contact_info(text, contact_forms, user_state, call_report_id, order)
             commands.extend(extend_commands)
         if "Add follow-ups" in msg_type:
             follow_apps = await self.extract_follow_ups(text)
@@ -168,18 +168,19 @@ class VoiceBot:
 
     async def update_contact_info(self, text, contact_forms, user_data: UserData, call_report_id: str, order = 0):
         contact_fields = await self.extract_info_from_text(text, contact_forms)  
-        print("USER DATA: ", user_data.contacts)
         old_contacts = user_data.contacts.get(call_report_id, {})
-        print("OLD contacts")
+        if not old_contacts:
+            old_contacts = contact_forms
         tasks = await self.update_internet_information(contact_fields, old_contacts)
         if tasks:
             tasks = [t for t in tasks if t is not None]
             internet_info = await asyncio.gather(*tasks)
             internet_info = "\n\n".join(internet_info)
             contact_fields = await self.extract_info_from_text(internet_info, contact_fields)
+        
         user_data.contacts[call_report_id] = contact_fields
+        contact_fields = self.take_only_changed_contacts(contact_fields, old_contacts)
         # for contact in contact_fields:
-        print(contact_fields)
         user_data, extend_commands = await self.check_info_ask_for_extra_info(text, user_data, CommandType.UPDATE_CONTACT, contact_fields, required_fields, order)
         return user_data, extend_commands
     
@@ -546,3 +547,22 @@ class VoiceBot:
         for contact in contacts:
             contact["GeneralInformation"]["ContactID"] = str(uuid4())
         return contacts
+
+    @staticmethod
+    def take_only_changed_contacts(new_contacts: list, old_contacts: list):
+        final_contacts = []
+        for new in new_contacts:
+            n_id = new["GeneralInformation"]["ContactID"]
+            o_id, old_c = None, None
+            for old in old_contacts:
+                o_id = old["GeneralInformation"]["ContactID"]
+                if o_id == n_id:
+                    old_c = old
+                    break
+            if o_id == n_id and new == old_c:
+                print("The same contacts:", old == new)
+            else:
+                print(o_id, n_id)
+                final_contacts.append(new)
+        return final_contacts
+                
