@@ -3,7 +3,7 @@ from .voice import text2speech
 from utils import lang2voice
 
 
-class CommandType(Enum):  
+class CommandType:  
     PLAY_BOT_VOICE = "playBotVoice"  
     CREATE_CONTACT = "createContacts"  
     CREATE_REPORT = "createCallReport"
