@@ -114,7 +114,6 @@ def load_preprocess_json(text: str):
     # print("END", text)
     # Step 3: Attempt to parse the cleaned JSON string  
     try: 
-        print("DEBUG: ", text) 
         parsed = json.loads(text)  
 
         # Step 4: If the result is still a string (e.g., nested JSON), parse it again  

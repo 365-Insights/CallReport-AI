@@ -48,13 +48,7 @@ If it is possible, fill in some fields with likely information (e.g. determining
 classification_system_prompt = """Your task is to analyze the current user message in the context of the conversation, which includes the **last bot response** and the **previous user message**. Based on this context, determine the most appropriate categories from the list above. Always return all applicable categories in a Python list, even if the message appears ambiguous. If the current user message does not clearly fit any of the categories, return ["None"].     
     
 Provide no explanations or additional text, only the names of the selected categories in a Python list. """
-def get_classification_prompt(user_msg, chat_history):  
-    formatted_history = get_formatted_history(chat_history)  
-    ### Chat History:   
-    classification_prompt = f"""Your task is to analyze the current user message in the context of the conversation, which includes the **last bot response** and the **previous user message**. Based on this context, determine the most appropriate categories from the list above. Always return all applicable categories in a Python list, even if the message appears ambiguous. If the current user message does not clearly fit any of the categories, return ["None"].     
-    
-Provide no explanations or additional text, only the names of the selected categories in a Python list. """  
-  
+
 def get_classification_prompt(user_msg, chat_history):    
     formatted_history = get_formatted_history(chat_history)    
     ### Chat History:     
@@ -79,8 +73,8 @@ Classify the current user message into one or more of the predefined categories 
   Example: "Cancel everything."      
 - **Save**: The user explicitly asks to save something, such as progress, settings, or changes they’ve made.      
   Example: "Save my progress."      
-- **None**: The user’s message does not match any of the above categories or is unclear in intent. Use this category if the message is ambiguous.      
-  Example: "The weather is great today"      
+- **None**: The user's message does not match any of the above categories or is unclear in intent. Use this category if the message is ambiguous.      
+  Example: "The weather is great today"
 Example for messages with multiple categories:  
  User Message: 'I had been in a meeting with Alexandr Diakon from Infopulse. He is interested in new AI technologies and I would like to schedule further appointments on Friday 25th about the MVP plan.'  
  Expected Output: '["Create report", "Create contact", "Add follow-ups", "Fill interests"]'  

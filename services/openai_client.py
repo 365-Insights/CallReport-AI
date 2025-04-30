@@ -1,5 +1,6 @@
 import traceback
 from typing import Dict, List
+import os
 import asyncio
 
 import openai
@@ -46,15 +47,17 @@ class OpenAiClient:
         )
 
 
-    async def generate_response(self, messages: List[Dict[str, str]], max_tokens = None, process = True) -> str:
+    async def generate_response(self, messages: List[Dict[str, str]], max_tokens = None, process = True, temperature: float = 0.7, top_p: float = 0.95,
+                                 model_name: str = None) -> str:
         try:
             # print()
+            print(self.model if not model_name else model_name)
             response = await self.gen_client.chat.completions.create(
-            model = self.model,
+            model = self.model if not model_name else model_name,
             messages=messages,
-            temperature=0.7,
+            temperature=temperature,
             max_tokens = max_tokens,
-            top_p=0.95,
+            top_p=top_p,
             frequency_penalty=0,
             presence_penalty=0
             )

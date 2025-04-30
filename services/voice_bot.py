@@ -5,11 +5,11 @@ from .llm_prompts import *
 from .user_state import UserData
 from .ai_agent import SearchAgent
 from .commands import *
-
 from utils import convert_base64_audio_to_wav, lang2voice, load_preprocess_json, locale2lang, get_company_imprint, merge_dicts_recursive
+
 from uuid import uuid4
 import asyncio
-
+import os
 
 name_path = ("GeneralInformation", "FirstName")
 industry_path = "IndustryList"
@@ -19,6 +19,7 @@ industry_formated = ""
 
 class VoiceBot:
     def __init__(self, openai_config: dict):
+        self.BEST_MODEL = os.environ.get("search_agent_llm")
         self.openai_client = OpenAiClient(openai_config)
         self.users_states = {} # report_id to state
         self.ai_agent = SearchAgent()
@@ -370,7 +371,7 @@ class VoiceBot:
                 {"role": "system", "content": classification_system_prompt},
                 {"role": "user", "content": get_classification_prompt(message, chat_history) + message + "'"}
             ]
-        res = await self.openai_client.generate_response(messages)
+        res = await self.openai_client.generate_response(messages, max_tokens = 100, model_name = self.BEST_MODEL, top_p = 0.7)
         return res
 
 
