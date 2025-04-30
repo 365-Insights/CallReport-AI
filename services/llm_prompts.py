@@ -314,6 +314,7 @@ If it is possible fill in some fields with likely information for example determ
 Form fields:  
 {fields_no_required}  
 """ 
+    # print("FULLL PROMPT:", extract_form_internet_prompt)
     return extract_form_internet_prompt 
 
 def get_prompt_no_info_found(user_msg: str, locale: str = "de-DE"):  

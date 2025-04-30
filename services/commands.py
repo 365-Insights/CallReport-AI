@@ -7,7 +7,7 @@ class CommandType:
     PLAY_BOT_VOICE = "playBotVoice"  
     CREATE_CONTACT = "createContacts"  
     CREATE_REPORT = "createCallReport"
-    UPDATE_CONTACT = "updateCurrentContact"  
+    UPDATE_CONTACT = "updateContacts"  
     FILL_INTERESTS = "fillInterests"  
     FILL_IN_SUMMARY = "fillInSummary"  
     ADD_FOLLOW_UPS = "addFollowUps"  
