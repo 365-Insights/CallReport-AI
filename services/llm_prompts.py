@@ -69,9 +69,10 @@ Classify the current user message into one or more of the predefined categories 
   Example: "My new email address is john.doe@example.com."      
   Example: "Update company of Pavel to Microsoft"      
 - **Add follow-ups**: The user indicates a need to create tasks, reminders, or action items or future meetings to be followed up on in the future. These could involve scheduling a call, setting a meeting, or assigning a task.      
-- **Fill interests**: The user talks about personal interests or preferences they want to be recorded or updated, such as hobbies, favorite activities, likes, or focus areas.      
+- **Fill interests**: The user talks about personal interests or preferences they want to be recorded or updated, such as hobbies, favorite activities, likes, or focus areas. It could be something that users/people discussed during meeting or call.    
   Example: "I enjoy AI and Machine Learning."    
-  Example: "He is interested in Python and Golang development."       
+  Example: "He is interested in Python and Golang development."    
+  Example: "We talked about new AI technologies"   
 - **Cancel**: The user wants to cancel an action, task, or operation. This includes explicit requests to stop, abort, or discontinue a process.      
   Example: "Cancel everything."      
 - **Save**: The user explicitly asks to save something, such as progress, settings, or changes they’ve made.      
@@ -86,7 +87,7 @@ Example for messages with multiple categories:
  User Message: 'Generate a report for the last meeting with Paolo from Cloud Value'  
  Expected Output: '["Create report", "Create contact"]'  
  User Message: 'I have been to a meeting with Oleksandr Diakon, we discussed new PowerApps project. I want to have meeting with him next Friday at 5 pm.'  
- Expected Output: '["Create report", "Create contact", "Add follow-ups"]'  
+ Expected Output: '["Create report", "Create contact", "Add follow-ups", "Fill interests"]'  
  User Message: 'Generate a formatted report based on the conversation with Paolo'  
  Expected Output: '["Create report", "Create Contact"]'  
  Use the following context to make your decision:      
