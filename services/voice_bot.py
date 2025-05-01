@@ -176,7 +176,7 @@ class VoiceBot:
             tasks = [t for t in tasks if t is not None]
             internet_info = await asyncio.gather(*tasks)
             internet_info = "\n\n".join(internet_info)
-            contact_fields = await self.extract_info_from_text(internet_info, contact_fields)
+            contact_fields = await self._fill_forms_with_extra_info(internet_info, contact_fields)
         
         user_data.contacts[call_report_id] = contact_fields
         contact_fields = self.take_only_changed_contacts(contact_fields, old_contacts)
