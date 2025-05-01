@@ -162,7 +162,6 @@ class VoiceBot:
                 commands.extend(extend_commands)
             elif not extend_commands: 
                 commands.append(gen_general_command(CommandType.SAVE, order = order))
-        
         return commands, user_state, call_report_id
     
 

@@ -99,6 +99,165 @@ def convert_base64_audio_to_wav(base64_audio_data, output_filename):
         print(f"An unexpected error occurred: {e}")  
         print(traceback.format_exc())  
         return None  
+    
+
+def fix_malformed_json(json_string):
+    if not json_string or not isinstance(json_string, str):
+        raise ValueError("Input must be a non-empty string")
+    
+    # Try parsing the JSON directly first
+    try:
+        return json.loads(json_string)
+    except json.JSONDecodeError:
+        # If direct parsing fails, try to fix common issues
+        fixed_string = json_string
+        
+        # Step 1: Remove unescaped quotes inside string values
+        # This pattern looks for string values containing unescaped quotes
+        fixed_string = re.sub(r'(:\s*")([^"]*)"([^"]*")(?=[,}])', 
+                              lambda m: f'{m.group(1)}{m.group(2)} {m.group(3)}',
+                              fixed_string)
+        
+        # Step 2: Fix unclosed quotes that end with single quote (')
+        fixed_string = re.sub(r':\s*"([^"]*)\'"?(?=[,}]|$)',
+                             r': "\1"',
+                             fixed_string)
+        
+        # Step 3: Handle truncated JSON structures
+        # Count opening and closing braces/brackets
+        open_braces = fixed_string.count('{')
+        close_braces = fixed_string.count('}')
+        open_brackets = fixed_string.count('[')
+        close_brackets = fixed_string.count(']')
+        
+        # Close any unclosed structures
+        fixed_string += ']' * (open_brackets - close_brackets)
+        fixed_string += '}' * (open_braces - close_braces)
+        
+        # Try parsing the fixed string
+        try:
+            return json.loads(fixed_string)
+        except json.JSONDecodeError:
+            # If the fix didn't work, try the fallback approach
+            return fallback_json_fix(json_string)
+
+
+def fallback_json_fix(json_string):
+    # Create a shell structure for the result
+    result = {}
+    
+    # Look for a top-level array structure pattern
+    array_match = re.search(r'^\s*{\s*"([^"]+)"\s*:\s*\[', json_string)
+    if array_match:
+        array_name = array_match.group(1)
+        result[array_name] = []
+        
+        # Extract objects within the array
+        object_matches = re.findall(r'{\s*"([^"]+)"\s*:', json_string)
+        if object_matches and len(object_matches) > 1:
+            # There's at least one nested object
+            result[array_name].append({})
+    
+    # Extract all key-value pairs
+    pairs = []
+    key_value_pattern = r'"([^"]+)"\s*:\s*(?:"([^"]*)"|([^,}\]]*))(?=[,}\]]|$)'
+    
+    for match in re.finditer(key_value_pattern, json_string):
+        key = match.group(1)
+        # The value could be in different capture groups based on type
+        value = match.group(2) if match.group(2) is not None else match.group(3)
+        
+        # Clean up the value if needed
+        if value:
+            value = value.strip()
+            
+            # Convert to appropriate type if it's not a string
+            if value == 'null':
+                value = None
+            elif value == 'true':
+                value = True
+            elif value == 'false':
+                value = False
+            elif value and value.replace('.', '', 1).isdigit():
+                # Handle numeric values (both int and float)
+                value = float(value) if '.' in value else int(value)
+        
+        pairs.append({"key": key, "value": value})
+    
+    # Clean up problematic values
+    for pair in pairs:
+        # Remove inner quotes from string values
+        if isinstance(pair["value"], str):
+            # Remove any unescaped quotes in the middle of values
+            pair["value"] = re.sub(r'(?<!")"(?!")', '', pair["value"])
+            
+            # Remove trailing single quotes
+            if pair["value"].endswith("'"):
+                pair["value"] = pair["value"][:-1]
+    
+    # Build the final object structure
+    nested_object_keys = []
+    for pair in pairs:
+        if "Information" in pair["key"]:
+            nested_object_keys.append(pair["key"])
+        elif array_match and result[array_match.group(1)]:
+            # If we detected an array+object structure, add to the first object in array
+            if nested_object_keys:
+                # Handle nested object
+                nested_key = nested_object_keys[0]
+                if nested_key not in result[array_match.group(1)][0]:
+                    result[array_match.group(1)][0][nested_key] = {}
+                result[array_match.group(1)][0][nested_key][pair["key"]] = pair["value"]
+            else:
+                # Add directly to the first object in array
+                result[array_match.group(1)][0][pair["key"]] = pair["value"]
+        else:
+            # Add to root object
+            result[pair["key"]] = pair["value"]
+    
+    # Last attempt to fix if nothing was added to the result
+    if not result:
+        result = extract_key_values_aggressively(json_string)
+        
+    if not result:
+        raise ValueError("Failed to fix the malformed JSON")
+    
+    return result
+
+
+def extract_key_values_aggressively(json_string):
+    # Create a simple dict to store extracted values
+    extracted = {}
+    
+    # Look for any pattern that resembles a key-value pair
+    key_value_pattern = r'"([^"]+)"\s*:\s*(?:"([^"]*)"?|([^,}\]]*))(?=,|}|\]|$)'
+    
+    for match in re.finditer(key_value_pattern, json_string):
+        key = match.group(1)
+        # Value could be in different capture groups
+        raw_value = match.group(2) if match.group(2) is not None else match.group(3)
+        
+        if raw_value:
+            # Clean the value: remove unescaped quotes and trailing single quotes
+            value = raw_value.strip().replace('"', '')
+            if value.endswith("'"):
+                value = value[:-1]
+                
+            # Try to convert to appropriate data type
+            if value == 'null':
+                extracted[key] = None
+            elif value == 'true':
+                extracted[key] = True
+            elif value == 'false':
+                extracted[key] = False
+            elif value and value.replace('.', '', 1).isdigit():
+                # Convert to number if possible
+                extracted[key] = float(value) if '.' in value else int(value)
+            else:
+                extracted[key] = value
+    
+    return extracted
+
 
 def load_preprocess_json(text: str):  
     # print("Begginging", text)
@@ -114,8 +273,9 @@ def load_preprocess_json(text: str):
     # print("END", text)
     # Step 3: Attempt to parse the cleaned JSON string  
     try: 
-        parsed = json.loads(text)  
-
+        parsed = fix_malformed_json(text)
+        print(parsed)
+        # parsed = json.loads(text)   
         # Step 4: If the result is still a string (e.g., nested JSON), parse it again  
         if isinstance(parsed, str):  
             try:  
