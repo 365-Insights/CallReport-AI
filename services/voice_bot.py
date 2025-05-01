@@ -175,6 +175,7 @@ class VoiceBot:
         if tasks:
             tasks = [t for t in tasks if t is not None]
             internet_info = await asyncio.gather(*tasks)
+            internet_info = [t for t in internet_info if t is not None]
             internet_info = "\n\n".join(internet_info)
             contact_fields = await self._fill_forms_with_extra_info(internet_info, contact_fields)
         
