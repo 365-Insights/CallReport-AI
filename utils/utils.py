@@ -8,7 +8,8 @@ import re
 from ast import literal_eval 
 import requests
 import mimetypes  
-  
+import asyncio
+
 from bs4 import BeautifulSoup
 
 
@@ -357,3 +358,49 @@ with open("utils/lang_voice.json", "r") as f:
 
 with open("utils/locale_lang.json", "r") as f:
     locale2lang = json.loads(f.read())
+from time import time  
+from functools import wraps  
+import asyncio  
+  
+def timing(print_args=False):  # Add a parameter to control argument printing  
+    def decorator(f):  
+        @wraps(f)  
+        def sync_wrap(*args, **kw):  
+            ts = time()  
+            result = f(*args, **kw)  
+            te = time()  
+  
+            if print_args:  
+                # Shorten arguments for printing if they exceed 50 characters  
+                args_str = ', '.join([str(arg)[:50] + ('...' if len(str(arg)) > 50 else '') for arg in args])  
+                kw_str = ', '.join([f"{k}={str(v)[:50]}{'...' if len(str(v)) > 50 else ''}" for k, v in kw.items()])  
+                print('func:%r args:[%r, %r] took: %2.4f sec' %   
+                      (f.__name__, args_str, kw_str, te-ts))  
+            else:  
+                print('func:%r took: %2.4f sec' % (f.__name__, te-ts))  
+  
+            return result  
+  
+        @wraps(f)  
+        async def async_wrap(*args, **kw):  
+            ts = time()  
+            result = await f(*args, **kw)  
+            te = time()  
+  
+            if print_args:  
+                # Shorten arguments for printing if they exceed 50 characters  
+                args_str = ', '.join([str(arg)[:50] + ('...' if len(str(arg)) > 50 else '') for arg in args])  
+                kw_str = ', '.join([f"{k}={str(v)[:50]}{'...' if len(str(v)) > 50 else ''}" for k, v in kw.items()])  
+                print('func:%r args:[%r, %r] took: %2.4f sec' %   
+                      (f.__name__, args_str, kw_str, te-ts))  
+            else:  
+                print('func:%r took: %2.4f sec' % (f.__name__, te-ts))  
+  
+            return result  
+  
+        # Check if the function is asynchronous  
+        if asyncio.iscoroutinefunction(f):  
+            return async_wrap  
+        else:  
+            return sync_wrap  
+    return decorator    

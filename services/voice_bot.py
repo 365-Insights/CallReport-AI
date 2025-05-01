@@ -5,7 +5,7 @@ from .llm_prompts import *
 from .user_state import UserData
 from .ai_agent import SearchAgent
 from .commands import *
-from utils import convert_base64_audio_to_wav, lang2voice, load_preprocess_json, locale2lang, get_company_imprint, merge_dicts_recursive
+from utils import *
 
 from uuid import uuid4
 import asyncio
@@ -24,7 +24,7 @@ class VoiceBot:
         self.users_states = {} # report_id to state
         self.ai_agent = SearchAgent()
 
-
+    @timing()
     async def process_user_message(self, lang: str = "de-DE", form_data: str = "", session_id: str = None, callreportID: str = None, payload: str = "", form_type: str = ""):
         user_data = self.users_states.get(session_id)
         
@@ -100,7 +100,7 @@ class VoiceBot:
             "sessionID": session_id
         }
     
-
+    @timing()
     async def generate_answer(self, text: str, msg_type: str, form_data: dict,
                              user_state = None, call_report_id:str = False):
         global industry_formated, required_fields
@@ -117,6 +117,7 @@ class VoiceBot:
         #         main_contact = contact
         if "InterestsList" in form_data:
             interest_form = form_data["InterestsList"]
+        # tasks = []
         if "Create report" in msg_type:
             command, call_report_id = self._create_call_report()
             order += 1
@@ -164,7 +165,7 @@ class VoiceBot:
                 commands.append(gen_general_command(CommandType.SAVE, order = order))
         return commands, user_state, call_report_id
     
-
+    @timing()
     async def update_contact_info(self, text, contact_forms, user_data: UserData, call_report_id: str, order = 0):
         contact_fields = await self.extract_info_from_text(text, contact_forms)  
         old_contacts = user_data.contacts.get(call_report_id, {})
@@ -184,7 +185,7 @@ class VoiceBot:
         user_data, extend_commands = await self.check_info_ask_for_extra_info(text, user_data, CommandType.UPDATE_CONTACT, contact_fields, required_fields, order)
         return user_data, extend_commands
     
-
+    @timing()
     async def update_internet_information(self, contact_fields: dict, old_contacts: dict) -> list:
         all_companies = []
         tasks = []
@@ -211,7 +212,7 @@ class VoiceBot:
                 tasks.append(self.fill_internet_personal_info(contact))
         return tasks
 
-
+    @timing()
     async def fill_internet_personal_info(self, user_form: dict, fill_form: bool = False) -> list:
         print("FIll internet information")
         first_name, second_name = user_form["GeneralInformation"]["FirstName"], user_form["GeneralInformation"]["LastName"]
@@ -238,7 +239,7 @@ class VoiceBot:
         # user_data.history_data["contact_fields"] = fields
         return fields
     
-    
+    @timing()
     async def fill_internet_company_info(self, user_form: dict, fill_form = False):
         commands = []
         print("FIll internet info about company") 
@@ -300,7 +301,7 @@ class VoiceBot:
         commands = gen_general_command(CommandType.CREATE_REPORT, value = {"CallReportID": call_report_id}, val_type="json", order = order)
         return commands, call_report_id
     
-
+    @timing()
     async def _create_contact(self, text: str, form_data: dict, user_data: UserData, call_report_id: str = "", order = 0):
         global required_fields 
         extend_commands = []
@@ -338,7 +339,7 @@ class VoiceBot:
         #     user_data, extend_commands = await self.check_info_ask_for_extra_info(text, user_data, cmd_name, contact, required_fields, order)
         return {"commands": extend_commands, "contact_fields": contact_fields, "order": order,"call_report_id": call_report_id, "answer": msg}, user_data
 
-
+    @timing()
     async def fill_in_interests(self, text: str, payload, user_data: UserData, order = 0):
         extend_commands = []
         interests = None
@@ -365,7 +366,7 @@ class VoiceBot:
             return 
         
     
-
+    @timing()
     async def classify_user_message(self, message: str, chat_history)->str:
         messages = [
                 {"role": "system", "content": classification_system_prompt},
@@ -374,7 +375,7 @@ class VoiceBot:
         res = await self.openai_client.generate_response(messages, max_tokens = 100, model_name = self.BEST_MODEL, top_p = 0.7)
         return res
 
-
+    @timing()
     async def extract_info_from_text(self, text: str, fields: dict)->str:
         messages = [
                 {"role": "system", "content": extract_form_system_prompt},
@@ -387,7 +388,7 @@ class VoiceBot:
 
         return res
     
-
+    @timing()
     async def _fill_forms_with_extra_info(self, information: str, fields: dict)->str:
         messages = [
             {"role": "user", "content": prompt_fill_form_fields_internet(fields, information)}
@@ -399,7 +400,7 @@ class VoiceBot:
         contact_fields = load_preprocess_json(res)
         return contact_fields
     
-
+    @timing()
     async def extract_follow_ups(self, text: str):
         messages = [
                 {"role": "system", "content": system_flollow_ups},
@@ -410,7 +411,7 @@ class VoiceBot:
         res = load_preprocess_json(res)
         return res
     
-
+    @timing()
     async def extract_list_interests(self, text: str, data: list):
         print("Extracting interests")
         # processed_interests = [{"id": interest["_Id"], "name": interest["_Name"]} for interest in data]
@@ -429,7 +430,7 @@ class VoiceBot:
                     result.append(interest)
         return result
     
-
+    @timing()
     async def generate_summery(self, user_text: str, interests: list, user_name: str):
         names = [i["_Name"] for i in interests]
         prompt = get_summery_prompt(user_text, names, user_name)
@@ -438,7 +439,8 @@ class VoiceBot:
             ]
         summery = await self.openai_client.generate_response(messages)
         return summery
-
+    
+    @timing()
     async def check_info_ask_for_extra_info(self, text: str, user_data, cmd_name: str, contact_fields: list, required_fields, order = 0):
         extend_commands = []
         print("Required fields: ", required_fields)

@@ -2,10 +2,12 @@ import traceback
 from typing import Dict, List
 import os
 import asyncio
+import time
 
 import openai
 from openai import AsyncAzureOpenAI
 
+from utils import timing
 
 async def retry_with_backoff(
     func,
@@ -46,7 +48,7 @@ class OpenAiClient:
             azure_endpoint=self.config["ENDPOINT"],
         )
 
-
+    # @timing()
     async def generate_response(self, messages: List[Dict[str, str]], max_tokens = None, process = True, temperature: float = 0.7, top_p: float = 0.95,
                                  model_name: str = None) -> str:
         try:
