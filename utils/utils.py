@@ -275,7 +275,6 @@ def load_preprocess_json(text: str):
     # Step 3: Attempt to parse the cleaned JSON string  
     try: 
         parsed = fix_malformed_json(text)
-        print(parsed)
         # parsed = json.loads(text)   
         # Step 4: If the result is still a string (e.g., nested JSON), parse it again  
         if isinstance(parsed, str):  

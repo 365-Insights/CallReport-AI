@@ -27,6 +27,12 @@ def gen_general_command(command_name: str, value = {}, val_type: str = dict, ord
     return command
 
 
+def set_commands_order(commands: list):
+    for o, _ in enumerate(commands):
+        commands[o]["order"] = o
+    return commands
+
+
 def generate_audio(text, lang = "en-US"):
     voice = lang2voice.get(lang, "en-US-AvaMultilingualNeural")
     audio_data, duration = text2speech(text, voice)
@@ -45,9 +51,9 @@ def gen_voice_play_command(text: str, order = 1, lang = "en-US"):
     return voice_play
 
 def validate_commands(commands: list):
+    commands = set_commands_order(commands)
     to_remove = []
     for i, comand in enumerate(commands):
-        empty = False
         if comand["name"] not in (CommandType.SAVE, CommandType.CANCEL):
             if not comand["parameters"] or not comand["parameters"]['value']:
                 to_remove.append(comand)   

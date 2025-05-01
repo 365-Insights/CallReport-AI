@@ -103,7 +103,6 @@ Current user message: '{user_msg}'
 
 system_flollow_ups = """You are a highly accurate and efficient assistant designed to extract specific information from transcribed text. Your task is to extract the following data obtained using the Speech-to-Text service, check the spelling, and consider that it may be a dialogue."""
 def get_folow_ups_prompt(user_text: str):
-    print(user_text)
     td = datetime.now()
     extract_follow_ups = f'''Extract follow-ups details from the provided user text and return them in the exact JSON format specified below. Follow these rules strictly:    
 1. The content of each attribute should be inferred and filled appropriately by the model based on the user text:    
@@ -133,7 +132,6 @@ JSON format for multiple follow-ups:
   
 Input: [USER TEXT] - {user_text}    
 Output: Return only the JSON object, strictly adhering to the format above.    '''
-    print(333)
     return extract_follow_ups
 
 

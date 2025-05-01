@@ -36,7 +36,6 @@ class VoiceBot:
         last_answer = user_data.last_answer
         user_text = payload
         form_data = load_preprocess_json(form_data)
-        print("USER TEXT: ", user_text)
         msg_type = await self.classify_user_message(user_text, user_data.chat_history) 
         print("Put state as: ", msg_type)
         user_data.state = msg_type
@@ -106,63 +105,66 @@ class VoiceBot:
         global industry_formated, required_fields
         commands = []
         order = 0
-        print(msg_type)  
+        # print(msg_type)  
         contact_forms = form_data["ContactList"]
         main_contact = contact_forms[0]
-        industry_values = form_data["IndustryList"]
         industry_formated = get_variant_of_fields(form_data)
-        # for contact in contact_forms:
-        #     if contact["GeneralInformation"]["MainContact"] == 1:
-        #         print("Found main contact")
-        #         main_contact = contact
         if "InterestsList" in form_data:
             interest_form = form_data["InterestsList"]
-        # tasks = []
+
+        if "Cancel" in msg_type:
+            commands.append(gen_general_command(CommandType.CANCEL))
         if "Create report" in msg_type:
             command, call_report_id = self._create_call_report()
             order += 1
             # msg_type += "Create contact"
             commands.append(command)
-        if "Create contact" in msg_type:
-            res, user_state = await self._create_contact(text, contact_forms, user_state, call_report_id, order)
-            commands.extend(res["commands"])
-            order = res["order"]
+        
         if "None" in msg_type:
             answer = await self.generate_general_answer(text, user_state.language)
             user_state.last_answer = answer
             order += 1
             commands.append(gen_voice_play_command(answer, order, user_state.language))
+            return commands, user_state, call_report_id
         elif self._is_call_report_nan(call_report_id) and not commands:
             print("Can't do this not inside call report with classification: ", msg_type)
             answer = await self.generate_not_in_callreport_answer(text, lang = user_state.language)
             user_state.last_answer = answer
             order += 1
             commands.append(gen_voice_play_command(answer, order, user_state.language))
-        if "Fill interests" in msg_type:
-            res = await self.fill_in_interests(text, interest_form, user_state, order)
-            if res:
-                order = res.get("order", 0)
-                commands.extend(res["commands"])
-        if "Update info" in msg_type:
-            required_fields = main_contact["RequiredFields"]
-            user_state, extend_commands = await self.update_contact_info(text, contact_forms, user_state, call_report_id, order)
-            commands.extend(extend_commands)
-        if "Add follow-ups" in msg_type:
-            follow_apps = await self.extract_follow_ups(text)
-            order += 1
-            commands.append(gen_general_command(CommandType.ADD_FOLLOW_UPS, follow_apps, "list", order))
-        if "Cancel" in msg_type:
-            order += 1
-            commands.append(gen_general_command(CommandType.CANCEL, order = order))
+            return commands, user_state, call_report_id
+        
+        tasks = []
+        if "Create contact" in msg_type:  
+            tasks.append(self._create_contact(text, contact_forms, user_state, call_report_id))  
+        if "Update info" in msg_type:  
+            required_fields = main_contact["RequiredFields"]  
+            tasks.append(self.update_contact_info(text, contact_forms, user_state, call_report_id))  
+        if "Fill interests" in msg_type:  
+            tasks.append(self.fill_in_interests(text, interest_form, user_state, order))  
+        if "Add follow-ups" in msg_type:  
+            tasks.append(self._add_follow_ups(text, user_state))  
+    
+        # Execute all tasks concurrently  
+        results = await asyncio.gather(*tasks)  
+
+        # Process results from the gathered tasks  
+        for result in results:  
+            if result:
+                extend_commands, user_state = result  
+                if extend_commands:  
+                    commands.extend(extend_commands)
+
         if "Save" in msg_type:
-            order += 1
             extend_commands = []
-            required_fields = main_contact["RequiredFields"]
-            user_state, extend_commands = await self.check_info_ask_for_extra_info(text, user_state, "", contact_forms, required_fields, order)
-            if extend_commands and not self.check_for_voice_command(commands): 
-                commands.extend(extend_commands)
-            elif not extend_commands: 
-                commands.append(gen_general_command(CommandType.SAVE, order = order))
+            # required_fields = main_contact["RequiredFields"]
+            # user_state, extend_commands = await self.check_info_ask_for_extra_info(text, user_state, "", contact_forms, required_fields, order)
+            # if extend_commands and not self.check_for_voice_command(commands): 
+            #     commands.extend(extend_commands)
+            # elif not extend_commands: 
+            commands.append(gen_general_command(CommandType.SAVE))
+        
+
         return commands, user_state, call_report_id
     
     @timing()
@@ -183,7 +185,7 @@ class VoiceBot:
         contact_fields = self.take_only_changed_contacts(contact_fields, old_contacts)
         # for contact in contact_fields:
         user_data, extend_commands = await self.check_info_ask_for_extra_info(text, user_data, CommandType.UPDATE_CONTACT, contact_fields, required_fields, order)
-        return user_data, extend_commands
+        return extend_commands, user_data
     
     @timing()
     async def update_internet_information(self, contact_fields: dict, old_contacts: dict) -> list:
@@ -295,6 +297,11 @@ class VoiceBot:
             complete_info = contact_fields
         return complete_info
     
+    @timing()
+    async def _add_follow_ups(self, text, user_data: UserData):
+        follow_apps = await self.extract_follow_ups(text)
+        return [gen_general_command(CommandType.ADD_FOLLOW_UPS, follow_apps, "list", 0)], user_data
+
 
     def _create_call_report(self, order = 0):
         call_report_id = str(uuid4())
@@ -337,7 +344,7 @@ class VoiceBot:
             contact_fields[0]["GeneralInformation"]["MainContact"] = True
         # for contact in contact_fields:
         #     user_data, extend_commands = await self.check_info_ask_for_extra_info(text, user_data, cmd_name, contact, required_fields, order)
-        return {"commands": extend_commands, "contact_fields": contact_fields, "order": order,"call_report_id": call_report_id, "answer": msg}, user_data
+        return extend_commands, user_data
 
     @timing()
     async def fill_in_interests(self, text: str, payload, user_data: UserData, order = 0):
@@ -360,7 +367,7 @@ class VoiceBot:
             summery = await self.generate_summery(text, interests, name)
             order+=1
             extend_commands.append(gen_general_command(CommandType.FILL_IN_SUMMARY, summery, "summary", order))
-            return {"commands": extend_commands, "interests": interests, "order": order}
+            return extend_commands, user_data
         else:
             print("No relevant interests found. ")
             return 
@@ -382,7 +389,7 @@ class VoiceBot:
                 {"role": "user", "content": prompt_fill_form_fields(fields) + text}
             ]
         res = await self.openai_client.generate_response(messages)
-        print("FIlled fields", res)
+        # print("FIlled fields", res)
         res = str(res).strip("'<>() ").replace('\'', '\"').replace("Unknown", "")
         res = load_preprocess_json(res)
 
@@ -400,7 +407,7 @@ class VoiceBot:
         contact_fields = load_preprocess_json(res)
         return contact_fields
     
-    @timing()
+
     async def extract_follow_ups(self, text: str):
         messages = [
                 {"role": "system", "content": system_flollow_ups},
@@ -567,4 +574,5 @@ class VoiceBot:
                 print(o_id, n_id)
                 final_contacts.append(new)
         return final_contacts
-                
+    
+    
