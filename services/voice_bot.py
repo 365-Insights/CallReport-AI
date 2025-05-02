@@ -36,7 +36,7 @@ class VoiceBot:
         last_answer = user_data.last_answer
         user_text = payload
         form_data = load_preprocess_json(form_data)
-        msg_type = await self.classify_user_message(user_text, user_data.chat_history) 
+        msg_type = await self.classify_user_message(user_text, user_data.chat_history, callreportID) 
         print("Put state as: ", msg_type)
         user_data.state = msg_type
         commands = []
@@ -374,10 +374,10 @@ class VoiceBot:
         
     
     @timing()
-    async def classify_user_message(self, message: str, chat_history)->str:
+    async def classify_user_message(self, message: str, chat_history, call_report_id: str = None)->str:
         messages = [
                 {"role": "system", "content": classification_system_prompt},
-                {"role": "user", "content": get_classification_prompt(message, chat_history) + message + "'"}
+                {"role": "user", "content": get_classification_prompt(message, chat_history, call_report_id) + message + "'"}
             ]
         res = await self.openai_client.generate_response(messages, max_tokens = 100, model_name = self.BEST_MODEL, top_p = 0.7)
         return res
