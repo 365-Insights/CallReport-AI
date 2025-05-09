@@ -173,13 +173,13 @@ class VoiceBot:
         old_contacts = user_data.contacts.get(call_report_id, {})
         if not old_contacts:
             old_contacts = contact_forms
-        tasks = await self.update_internet_information(contact_fields, old_contacts)
+        tasks = await self.update_internet_information(contact_fields, old_contacts, user_data.language)
         if tasks:
             tasks = [t for t in tasks if t is not None]
             internet_info = await asyncio.gather(*tasks)
             internet_info = [t for t in internet_info if t is not None]
             internet_info = "\n\n".join(internet_info)
-            contact_fields = await self._fill_forms_with_extra_info(internet_info, contact_fields)
+            contact_fields = await self._fill_forms_with_extra_info(internet_info, contact_fields, user_data.language)
         
         user_data.contacts[call_report_id] = contact_fields
         contact_fields = self.take_only_changed_contacts(contact_fields, old_contacts)
@@ -188,7 +188,7 @@ class VoiceBot:
         return extend_commands, user_data
     
     @timing()
-    async def update_internet_information(self, contact_fields: dict, old_contacts: dict) -> list:
+    async def update_internet_information(self, contact_fields: dict, old_contacts: dict, lang: str = "de-DE") -> list:
         all_companies = []
         tasks = []
         if not old_contacts:
@@ -208,14 +208,14 @@ class VoiceBot:
             if company not in all_companies and old_company != company:
                 print("DIFFERENT COMPANIES")
                 all_companies.append(company)
-                tasks.append(self.fill_internet_company_info(contact))
+                tasks.append(self.fill_internet_company_info(contact, lang))
             if old_fname != fname or surname != old_surname:
                 print("DIFFERENT NAMES")
-                tasks.append(self.fill_internet_personal_info(contact))
+                tasks.append(self.fill_internet_personal_info(contact, lang))
         return tasks
 
     @timing()
-    async def fill_internet_personal_info(self, user_form: dict, fill_form: bool = False) -> list:
+    async def fill_internet_personal_info(self, user_form: dict, fill_form: bool = False, lang: str = "de-DE") -> list:
         print("FIll internet information")
         first_name, second_name = user_form["GeneralInformation"]["FirstName"], user_form["GeneralInformation"]["LastName"]
         if not all([first_name, second_name]):
@@ -237,12 +237,12 @@ class VoiceBot:
             return None
         if not fill_form:
             return personal_info
-        fields = await self._fill_forms_with_extra_info(personal_info, user_form)
+        fields = await self._fill_forms_with_extra_info(personal_info, user_form, lang)
         # user_data.history_data["contact_fields"] = fields
         return fields
     
     @timing()
-    async def fill_internet_company_info(self, user_form: dict, fill_form = False):
+    async def fill_internet_company_info(self, user_form: dict, fill_form = False, lang = "de-DE"):
         commands = []
         print("FIll internet info about company") 
         company = user_form["BusinessInformation"]["Company"]  
@@ -262,7 +262,7 @@ class VoiceBot:
         full_info = personal_info + f"\nWebsite: {website}"+ "\nImprint info: " + imprint_info
         if not fill_form:
             return full_info
-        fields = await self._fill_forms_with_extra_info(full_info, user_form)
+        fields = await self._fill_forms_with_extra_info(full_info, user_form, lang)
         # print("new: ", fields)
         return full_info
     
@@ -272,11 +272,11 @@ class VoiceBot:
             comp_change, person_change = company, personal
             if comp_change:
                 company_search_task = tg.create_task( 
-                    self.fill_internet_company_info(contact_fields)
+                    self.fill_internet_company_info(contact_fields, user_data.language)
                 )
             if person_change:
                 pers_search_task  = tg.create_task(
-                    self.fill_internet_personal_info(contact_fields, )
+                    self.fill_internet_personal_info(contact_fields, user_data.language)
                 )
         company_info, personal_info = None, None
         if comp_change:
@@ -316,6 +316,7 @@ class VoiceBot:
         required_fields = form_data[0]["RequiredFields"]
         cmd_name = CommandType.CREATE_CONTACT
         contact_fields = await self.extract_info_from_text(text, form_data)
+        print("Extracted contact fields: ", contact_fields)
         # print("Fields BEFORE: ", contact_fields)
         all_companies = []
         tasks = []
@@ -323,13 +324,13 @@ class VoiceBot:
             company = contact["BusinessInformation"]["Company"]
             if company not in all_companies:
                 all_companies.append(company)
-                tasks.append(self.fill_internet_company_info(contact))
-            tasks.append(self.fill_internet_personal_info(contact))
+                tasks.append(self.fill_internet_company_info(contact, user_data.language))
+            tasks.append(self.fill_internet_personal_info(contact, user_data.language))
         internet_info = await asyncio.gather(*tasks)
         internet_info = [t for t in internet_info if t is not None]
         if internet_info:
             internet_info = "\n\n".join(internet_info)
-            contact_fields = await self._fill_forms_with_extra_info(internet_info, contact_fields)
+            contact_fields = await self._fill_forms_with_extra_info(internet_info, contact_fields, user_data.language)
         contact_fields = self.generate_contacts_ids(contact_fields)
         # print("ENRICHED CONTACTS: ", type(contact_fields), contact_fields)
         user_data.contacts[call_report_id] = contact_fields
@@ -396,9 +397,9 @@ class VoiceBot:
         return res
     
     @timing()
-    async def _fill_forms_with_extra_info(self, information: str, fields: dict)->str:
+    async def _fill_forms_with_extra_info(self, information: str, fields: dict, language: str = "de-DE")->str:
         messages = [
-            {"role": "user", "content": prompt_fill_form_fields_internet(fields, information)}
+            {"role": "user", "content": prompt_fill_form_fields_internet(fields, information, language)}
         ]
         res = await self.openai_client.generate_response(messages)
         res = str(res).strip("'<>() ").replace("Unknown", "")

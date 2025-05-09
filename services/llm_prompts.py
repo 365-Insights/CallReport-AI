@@ -314,10 +314,12 @@ Now, generate a suggestion for the user:
     return prompt 
 
 
-def prompt_fill_form_fields_internet(fields, internet_info_text):  
+def prompt_fill_form_fields_internet(fields, internet_info_text, language: str = "de-DE"):  
     # Create the prompt with instructions for GPT to fill in the fields  
     no_useless_fields = []
+    print("FIEEELDS: ", fields)
     for contact in fields:
+        print("STR OBJECTSSSSSS: ", contact)
         cont = {k: val for k, val in contact.items() for field in fields if k not in skip_sections}
         no_useless_fields.append(cont)
     no_useless_fields = json.dumps(no_useless_fields, ensure_ascii=False)
@@ -327,8 +329,8 @@ def prompt_fill_form_fields_internet(fields, internet_info_text):
     "{internet_info_text}"    
   
     Return only a JSON array with the provided fields for each contact, without any additional text or modifications. Each element in the JSON array should contain all the attributes in the exact format specified below, even if the fields are empty.   
-  
     - If possible, fill in some fields with likely information (e.g., determining gender by name, country by city, etc.).   
+    - When responding to a user's message, always reply in '{locale2lang[language]}'
     - Prioritize existing values in the form if they are already filled.   
     - Ensure that **company-related information (e.g., address, email, website, etc.) is consistently applied to all contacts associated with the same company.**   
     - Don't forget to fill summary fields for the appropriate section if they are empty. Don't confuse summaries across sections; only fill in the one that has relevant info.  In business section summery is about company, in personal section about person
