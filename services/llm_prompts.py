@@ -314,12 +314,10 @@ Now, generate a suggestion for the user:
     return prompt 
 
 
-def prompt_fill_form_fields_internet(fields, internet_info_text, language: str = "de-DE"):  
+def prompt_fill_form_fields_internet(fields: list, internet_info_text, language: str = "de-DE"):  
     # Create the prompt with instructions for GPT to fill in the fields  
     no_useless_fields = []
-    print("FIEEELDS: ", fields)
     for contact in fields:
-        print("STR OBJECTSSSSSS: ", contact)
         cont = {k: val for k, val in contact.items() for field in fields if k not in skip_sections}
         no_useless_fields.append(cont)
     no_useless_fields = json.dumps(no_useless_fields, ensure_ascii=False)

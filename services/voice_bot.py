@@ -215,7 +215,7 @@ class VoiceBot:
         return tasks
 
     @timing()
-    async def fill_internet_personal_info(self, user_form: dict, fill_form: bool = False, lang: str = "de-DE") -> list:
+    async def fill_internet_personal_info(self, user_form: dict, lang: str = "de-DE") -> list:
         print("FIll internet information")
         first_name, second_name = user_form["GeneralInformation"]["FirstName"], user_form["GeneralInformation"]["LastName"]
         if not all([first_name, second_name]):
@@ -235,15 +235,10 @@ class VoiceBot:
             # commands.append(gen_voice_play_command(answer, order, user_data.language))
             # return  commands, user_data
             return None
-        if not fill_form:
-            return personal_info
-        fields = await self._fill_forms_with_extra_info(personal_info, user_form, lang)
-        # user_data.history_data["contact_fields"] = fields
-        return fields
+        return personal_info
     
     @timing()
-    async def fill_internet_company_info(self, user_form: dict, fill_form = False, lang = "de-DE"):
-        commands = []
+    async def fill_internet_company_info(self, user_form: dict, lang = "de-DE"):
         print("FIll internet info about company") 
         company = user_form["BusinessInformation"]["Company"]  
         if not company:
@@ -260,10 +255,6 @@ class VoiceBot:
         imprint_info = get_company_imprint(website)
         # print("Imprint info: ", imprint_info)
         full_info = personal_info + f"\nWebsite: {website}"+ "\nImprint info: " + imprint_info
-        if not fill_form:
-            return full_info
-        fields = await self._fill_forms_with_extra_info(full_info, user_form, lang)
-        # print("new: ", fields)
         return full_info
     
     
@@ -397,7 +388,7 @@ class VoiceBot:
         return res
     
     @timing()
-    async def _fill_forms_with_extra_info(self, information: str, fields: dict, language: str = "de-DE")->str:
+    async def _fill_forms_with_extra_info(self, information: str, fields, language: str = "de-DE")->str:
         messages = [
             {"role": "user", "content": prompt_fill_form_fields_internet(fields, information, language)}
         ]
