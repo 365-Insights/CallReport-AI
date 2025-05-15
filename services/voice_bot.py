@@ -252,8 +252,9 @@ class VoiceBot:
             # commands.append(gen_voice_play_command(answer, order, user_data.language))
             return 
         website = await self._get_website(personal_info)
+        print("Website: ", website)
         imprint_info = get_company_imprint(website)
-        # print("Imprint info: ", imprint_info)
+         # print("Imprint info: ", imprint_info)
         full_info = personal_info + f"\nWebsite: {website}"+ "\nImprint info: " + imprint_info
         return full_info
     
@@ -547,6 +548,7 @@ class VoiceBot:
     def generate_contacts_ids(contacts: list):
         for contact in contacts:
             contact["GeneralInformation"]["ContactID"] = str(uuid4())
+        
         return contacts
 
     @staticmethod

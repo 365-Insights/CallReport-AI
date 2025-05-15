@@ -360,6 +360,6 @@ def get_website_extraction_prompt(info: str) -> str:
     {info}  
   
     Your response should only contain the URL of the official website and nothing else.  
-    Example of output: 'https://www.microsoft.com/'
+    Example of output: 'https://www.microsoft.com/', 'https://www.feinkost-kaefer.de/'
     """  
     return prompt

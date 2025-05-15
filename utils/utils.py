@@ -292,7 +292,7 @@ def load_preprocess_json(text: str):
 
 def get_imprint_url(base_url):  
     # Try to find common imprint page URLs  
-    common_imprint_paths = ['imprint', 'impressum', 'about', 'legal']  
+    common_imprint_paths = ['imprint', 'impressum', 'about', 'legal', 'pages/imprint']  
     for path in common_imprint_paths:  
         url = f"{base_url.rstrip('/')}/{path}"  
         response = requests.get(url)  
