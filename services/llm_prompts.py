@@ -331,7 +331,7 @@ def prompt_fill_form_fields_internet(fields: list, internet_info_text, language:
     - When responding to a user's message, always reply in '{locale2lang[language]}'
     - Prioritize existing values in the form if they are already filled.   
     - Ensure that **company-related information (e.g., address, email, website, etc.) is consistently applied to all contacts associated with the same company.**   
-    - Don't forget to fill summary fields for the appropriate section if they are empty. Don't confuse summaries across sections; only fill in the one that has relevant info.  In business section summery is about company, in personal section about person
+    - Don't forget to fill summary fields for the appropriate section if they are empty. Don't confuse summaries across sections; only fill in the one that has relevant info.  In business section summery is about company, in personal section about person. Same goes for email in company it is just basic company email for example: 'kontakt@feinkost-kaefer.de' and personal: 'r.barthelmann@feinkost-kaefer.de'.
     - Do not include any explanations, return only the JSON object, and do not exclude attributes from the JSON even if they are empty. This is important.  
     - {formatted_variations}
     Form fields:    
