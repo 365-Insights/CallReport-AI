@@ -35,6 +35,7 @@ async def main(req: func.HttpRequest) -> func.HttpResponse:
         callreportID = req_body.get("callreportID")
         value = req_body.get('value')
         language = req_body.get("language")
+        print("Language: ", language)
         # form_type = req_body.get("typeForm")
         try:
             response = await voice_bot.process_user_message(language, form_data, sessionID, callreportID, value)

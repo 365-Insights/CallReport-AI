@@ -117,7 +117,7 @@ class VoiceBot:
         if "Create report" in msg_type:
             command, call_report_id = self._create_call_report()
             order += 1
-            # msg_type += "Create contact"
+            msg_type += "Create contact"
             commands.append(command)
         
         if "None" in msg_type:
@@ -169,7 +169,7 @@ class VoiceBot:
     
     @timing()
     async def update_contact_info(self, text, contact_forms, user_data: UserData, call_report_id: str, order = 0):
-        contact_fields = await self.extract_info_from_text(text, contact_forms)  
+        contact_fields = await self.extract_info_from_text(text, contact_forms, user_data.language)  
         old_contacts = user_data.contacts.get(call_report_id, {})
         if not old_contacts:
             old_contacts = contact_forms
@@ -255,7 +255,11 @@ class VoiceBot:
         print("Website: ", website)
         imprint_info = get_company_imprint(website)
          # print("Imprint info: ", imprint_info)
-        full_info = personal_info + f"\nWebsite: {website}"+ "\nImprint info: " + imprint_info
+        if not imprint_info:
+            imprint_info = ""
+        if not website:
+            website = ""
+        full_info = personal_info + f"\nWebsite: {website}"+ "\nImprint info: " + str(imprint_info)
         return full_info
     
     
@@ -291,7 +295,7 @@ class VoiceBot:
     
     @timing()
     async def _add_follow_ups(self, text, user_data: UserData):
-        follow_apps = await self.extract_follow_ups(text)
+        follow_apps = await self.extract_follow_ups(text, user_data.language)
         return [gen_general_command(CommandType.ADD_FOLLOW_UPS, follow_apps, "list", 0)], user_data
 
 
@@ -307,7 +311,7 @@ class VoiceBot:
         msg = ""
         required_fields = form_data[0]["RequiredFields"]
         cmd_name = CommandType.CREATE_CONTACT
-        contact_fields = await self.extract_info_from_text(text, form_data)
+        contact_fields = await self.extract_info_from_text(text, form_data, user_data.language)
         print("Extracted contact fields: ", contact_fields)
         # print("Fields BEFORE: ", contact_fields)
         all_companies = []
@@ -343,7 +347,7 @@ class VoiceBot:
     async def fill_in_interests(self, text: str, payload, user_data: UserData, order = 0):
         extend_commands = []
         interests = None
-        interests = await self.extract_list_interests(text, payload)
+        interests = await self.extract_list_interests(text, payload, user_data.language)
         print("Interests: ", interests)
         if interests:
             order += 1
@@ -357,7 +361,7 @@ class VoiceBot:
             except Exception:
                 print("Couldn't get name from contacts")
                 name = ""
-            summery = await self.generate_summery(text, interests, name)
+            summery = await self.generate_summery(text, interests, name, user_data.language)
             order+=1
             extend_commands.append(gen_general_command(CommandType.FILL_IN_SUMMARY, summery, "summary", order))
             return extend_commands, user_data
@@ -376,10 +380,10 @@ class VoiceBot:
         return res
 
     @timing()
-    async def extract_info_from_text(self, text: str, fields: dict)->str:
+    async def extract_info_from_text(self, text: str, fields: dict, lang: str = "de-DE")->str:
         messages = [
                 {"role": "system", "content": extract_form_system_prompt},
-                {"role": "user", "content": prompt_fill_form_fields(fields) + text}
+                {"role": "user", "content": prompt_fill_form_fields(fields, lang) + text}
             ]
         res = await self.openai_client.generate_response(messages)
         # print("FIlled fields", res)
@@ -401,10 +405,10 @@ class VoiceBot:
         return contact_fields
     
 
-    async def extract_follow_ups(self, text: str):
+    async def extract_follow_ups(self, text: str, lang: str = "de-DE"):
         messages = [
                 {"role": "system", "content": system_flollow_ups},
-                {"role": "user", "content": get_folow_ups_prompt(text)}
+                {"role": "user", "content": get_folow_ups_prompt(text, lang)}
             ]
         res = await self.openai_client.generate_response(messages)
         print("Add follow ups", res)
@@ -412,10 +416,10 @@ class VoiceBot:
         return res
     
     @timing()
-    async def extract_list_interests(self, text: str, data: list):
+    async def extract_list_interests(self, text: str, data: list, lang: str = "de-DE"):
         print("Extracting interests")
         # processed_interests = [{"id": interest["_Id"], "name": interest["_Name"]} for interest in data]
-        prompt = get_extract_interests_prompt(text, data)
+        prompt = get_extract_interests_prompt(text, data, lang)
         
         messages = [
                 {"role": "user", "content": prompt}
@@ -431,9 +435,9 @@ class VoiceBot:
         return result
     
     @timing()
-    async def generate_summery(self, user_text: str, interests: list, user_name: str):
+    async def generate_summery(self, user_text: str, interests: list, user_name: str, lang: str = "de-DE"):
         names = [i["_Name"] for i in interests]
-        prompt = get_summery_prompt(user_text, names, user_name)
+        prompt = get_summery_prompt(user_text, names, user_name, lang)
         messages = [
                 {"role": "user", "content": prompt}
             ]

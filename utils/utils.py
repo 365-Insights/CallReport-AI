@@ -9,7 +9,7 @@ from ast import literal_eval
 import requests
 import mimetypes  
 import asyncio
-
+from time import sleep
 from bs4 import BeautifulSoup
 
 
@@ -292,12 +292,13 @@ def load_preprocess_json(text: str):
 
 def get_imprint_url(base_url):  
     # Try to find common imprint page URLs  
-    common_imprint_paths = ['imprint', 'impressum', 'about', 'legal', 'pages/imprint']  
+    common_imprint_paths = [ 'pages/imprint', 'imprint', 'impressum', 'about', 'legal']  
     for path in common_imprint_paths:  
         url = f"{base_url.rstrip('/')}/{path}"  
         response = requests.get(url)  
         if response.status_code == 200:  
             return url  
+        sleep(0.2)
     return None
 
 
@@ -320,13 +321,17 @@ def preprocess_text(text):
     return text
 
 def get_company_imprint(base_url):  
-    imprint_url = get_imprint_url(base_url)  
-    if imprint_url:  
-        imprint_text = parse_imprint(imprint_url)  
-        print(f"Imprint from {imprint_url}")  
-        return preprocess_text(imprint_text)
-    else:  
-        return 
+    try:
+        imprint_url = get_imprint_url(base_url)  
+        if imprint_url:  
+            imprint_text = parse_imprint(imprint_url)  
+            print(f"Imprint from {imprint_url}")  
+            return preprocess_text(imprint_text)
+        else:  
+            return 
+    except Exception:
+        print("Got an error during imprint: ", traceback.format_exc())
+        return
 
 def merge_dicts_recursive(dict1: dict, dict2: dict) -> dict:  
     """Merge dicts with priority values on dict1"""

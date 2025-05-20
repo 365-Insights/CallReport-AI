@@ -32,14 +32,15 @@ def get_variant_of_fields(full_form_data: dict):
     print("Updated Variation  fields:", formatted_variations)
     return text
 
-def prompt_fill_form_fields(fields): 
+def prompt_fill_form_fields(fields, lang: str): 
     no_useless_fields = []
     for contact in fields:
         cont = {k: val for k, val in contact.items() for field in fields if k not in skip_sections}
         no_useless_fields.append(cont)
     no_useless_fields = json.dumps(no_useless_fields, ensure_ascii=False)
     # print("NO Useless fields:", no_useless_fields)
-    extract_form_user_prompt = f"""Return only a JSON array with the provided fields for each contact, without any additional text or modifications. Each element in the JSON array should contain all the attributes in the exact format specified below, even if the fields are empty.  
+    extract_form_user_prompt = f"""Your response language should be {lang}.
+Return only a JSON array with the provided fields for each contact, without any additional text or modifications. Each element in the JSON array should contain all the attributes in the exact format specified below, even if the fields are empty.  
 {no_useless_fields} 
 If it is possible, fill in some fields with likely information (e.g. determining gender by name, country by city, etc.). The JSON array may include multiple contacts, based on the user input. Ensure to handle both cases: adding new contacts (with one or more forms) and updating existing contacts.
 {formatted_variations}
@@ -118,7 +119,7 @@ Current user message: '{user_msg}'
 
 
 system_flollow_ups = """You are a highly accurate and efficient assistant designed to extract specific information from transcribed text. Your task is to extract the following data obtained using the Speech-to-Text service, check the spelling, and consider that it may be a dialogue."""
-def get_folow_ups_prompt(user_text: str):
+def get_folow_ups_prompt(user_text: str, lang: str):
     td = datetime.now()
     extract_follow_ups = f'''Extract follow-ups details from the provided user text and return them in the exact JSON format specified below. Follow these rules strictly:    
 1. The content of each attribute should be inferred and filled appropriately by the model based on the user text:    
@@ -127,8 +128,9 @@ def get_folow_ups_prompt(user_text: str):
    - `datetime`: The specific date or time when the follow-up should be completed. (For you reference right now is {td})   
 2. The `type` attribute must be one of the following options: ["task", "call", "meeting"].    
 3. If specific details for an attribute are not explicitly mentioned in the user text, leave that attribute empty.    
-4. Always include all attributes in the JSON object, even if they are empty.    
-5. Do not include any additional text, explanations, or comments outside of the JSON object.    
+4. When responding to a user's message, always reply in '{locale2lang[lang]}' 
+5. Always include all attributes in the JSON object, even if they are empty.    
+6. Do not include any additional text, explanations, or comments outside of the JSON object.    
   
 JSON format for multiple follow-ups:    
 [
@@ -151,10 +153,9 @@ Output: Return only the JSON object, strictly adhering to the format above.    '
     return extract_follow_ups
 
 
-def get_extract_interests_prompt(user_message, available_interests):
+def get_extract_interests_prompt(user_message, available_interests, lang: str):
     prompt = f"""
     You are an intelligent assistant. Your task is to extract and fill in likely interests from a user's message based on a provided list of available interests. The available interests are in the following format:
-
     {available_interests}
 
     Given a user's message, identify and return the most likely interests from the list of available interests. The output should be only a Python list of IDs use double quotes for ids. If there is not relevant interests return empty list: []
@@ -166,11 +167,12 @@ def get_extract_interests_prompt(user_message, available_interests):
     return prompt
 
 
-def get_summery_prompt(user_text: str, interests: list, user_name: str):
+def get_summery_prompt(user_text: str, interests: list, user_name: str, lang: str):
     prompt = f"""You are an intelligent assistant. Your task is to generate a summary of a user's interests based on their message and a list of relevant interests. The relevant interests are provided in the following format:
 {interests}
 Given the user's message and the list of relevant interests, generate a summary that includes the names of the relevant interests and incorporates the user's message.
 The user's name is '{user_name}'. 
+When responding to a user's message, always reply in '{locale2lang[lang]}' 
 Don't add anything extra that is not related to user interests even if it is in user message. You need only a summery of user interests/hobbies. 
 User message: {user_text}
 
@@ -330,8 +332,8 @@ def prompt_fill_form_fields_internet(fields: list, internet_info_text, language:
     - If possible, fill in some fields with likely information (e.g., determining gender by name, country by city, etc.).   
     - When responding to a user's message, always reply in '{locale2lang[language]}'
     - Prioritize existing values in the form if they are already filled.   
-    - Ensure that **company-related information (e.g., address, email, website, etc.) is consistently applied to all contacts associated with the same company.**   
-    - Don't forget to fill summary fields for the appropriate section if they are empty. Don't confuse summaries across sections; only fill in the one that has relevant info.  In business section summery is about company, in personal section about person. Same goes for email in company it is just basic company email for example: 'kontakt@feinkost-kaefer.de' and personal: 'r.barthelmann@feinkost-kaefer.de'.
+    - Ensure that **company-related information (e.g., address, email, website, etc.) is consistently applied to all contacts associated with the same company.** 
+    - Don't forget to fill summary fields for the appropriate section if they are empty. Don't confuse summaries across sections; only fill in the one that has relevant info.  In business section summery is about company, in personal section about person. Same goes for email in company it is just basic company email for example: 'kontakt@feinkost-kaefer.de' and personal: 'e.fritz@feinkost-kaefer.de'.
     - Do not include any explanations, return only the JSON object, and do not exclude attributes from the JSON even if they are empty. This is important.  
     - {formatted_variations}
     Form fields:    
@@ -358,7 +360,7 @@ def get_website_extraction_prompt(info: str) -> str:
       
     Provided Information:  
     {info}  
-  
+    
     Your response should only contain the URL of the official website and nothing else.  
     Example of output: 'https://www.microsoft.com/', 'https://www.feinkost-kaefer.de/'
     """  
