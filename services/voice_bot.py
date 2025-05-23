@@ -227,7 +227,7 @@ class VoiceBot:
         neccessary_info = (first_name, second_name, company)
         if not all(neccessary_info):
             return  None
-        personal_info = await self.ai_agent.get_person_info(person, company, country)
+        personal_info, linked_url = await self.ai_agent.get_person_info(person, company, country)
         if personal_info == "None":
             # answer = await self.gen_no_info_found(user_msg)
             # user_data.last_answer = answer
@@ -235,6 +235,7 @@ class VoiceBot:
             # commands.append(gen_voice_play_command(answer, order, user_data.language))
             # return  commands, user_data
             return None
+        personal_info += f"\nLinkedin url: {linked_url}"
         return personal_info
     
     @timing()
@@ -262,36 +263,6 @@ class VoiceBot:
         full_info = personal_info + f"\nWebsite: {website}"+ "\nImprint info: " + str(imprint_info)
         return full_info
     
-    
-    async def enrich_contact_from_internet(self, text, contact_fields: dict, user_data: UserData, order: int = 0,  company: bool = 0, personal: bool = 0) -> dict:
-        async with asyncio.TaskGroup() as tg:
-            comp_change, person_change = company, personal
-            if comp_change:
-                company_search_task = tg.create_task( 
-                    self.fill_internet_company_info(contact_fields, user_data.language)
-                )
-            if person_change:
-                pers_search_task  = tg.create_task(
-                    self.fill_internet_personal_info(contact_fields, user_data.language)
-                )
-        company_info, personal_info = None, None
-        if comp_change:
-            company_info = company_search_task.result()
-        if person_change:
-            personal_info = pers_search_task.result()
-        if company_info and personal_info:
-            print("Merging both search: company and personal")
-            complete_info = merge_dicts_recursive(company_info, personal_info)
-        elif company_info:
-            print("Only company info")
-            complete_info = company_info
-        elif personal_info:
-            print("Only personal info")
-            complete_info = personal_info
-        else:
-            print("Neither company info nor personal info")
-            complete_info = contact_fields
-        return complete_info
     
     @timing()
     async def _add_follow_ups(self, text, user_data: UserData):

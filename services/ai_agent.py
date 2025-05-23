@@ -13,7 +13,7 @@ from azure.core.exceptions import (
 from azure.ai.projects.aio import AIProjectClient
 from azure.ai.projects.models import MessageRole, BingGroundingTool
 from azure.identity import DefaultAzureCredential
-
+from googlesearch import search
 
 
 
@@ -92,7 +92,7 @@ class SearchAgent:
             If you find then provide summery about the person, his email, phone, location, position, job title, industry where he works, education level. The more info the better."""  
         )  
         res = await self._generate_answer(prompt)  
-    
+        linked_url = self.search_person(full_name, company)
         # Retry logic if res is 'None'  
         if res == 'None':  
             print("Retry finding persons information")
@@ -106,7 +106,7 @@ class SearchAgent:
                 If no information is still found, confirm 'None'."""  
             )  
             res = await self._generate_answer(prompt_retry)  
-        return res  
+        return res, linked_url
 
     async def get_company_info(self, company_name: str):
         prompt = f"""  
@@ -137,6 +137,15 @@ Find as much info as possible that could be useful."""
         res = await self._generate_answer(prompt)
         return res
     
+    def search_person(self, name: str, company: str) -> str:
+        query = f"{name} {company} LinkedIn"
+        surname = name.split(" ")[1]
+        print("Surname: ", surname)
+        for result in search(query, num_results=5):
+            print(result)
+            if "linkedin" in result and "/in/" in result:
+                return result
+        
 if __name__ == "__main__":
     load_dotenv()
     aiagent = SearchAgent()
