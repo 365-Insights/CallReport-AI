@@ -192,7 +192,12 @@ class VoiceBot:
         all_companies = []
         tasks = []
         if not old_contacts:
-            return 
+            print("a new contact so get all internet info")
+            for i, contact in enumerate(contact_fields):
+                tasks.append(self.fill_internet_company_info(contact, lang))
+                tasks.append(self.fill_internet_company_info(contact, lang))
+            return tasks
+
         for i, contact in enumerate(contact_fields):
             contact_id = contact["GeneralInformation"]["ContactID"]
             company = contact["BusinessInformation"]["Company"]
@@ -212,6 +217,7 @@ class VoiceBot:
             if old_fname != fname or surname != old_surname:
                 print("DIFFERENT NAMES")
                 tasks.append(self.fill_internet_personal_info(contact, lang))
+            print("CHECKED company and person.", fname, "Old", old_fname, "new", surname, "Old", old_surname)
         return tasks
 
     @timing()
