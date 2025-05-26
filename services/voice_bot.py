@@ -176,7 +176,15 @@ class VoiceBot:
         tasks = await self.update_internet_information(contact_fields, old_contacts, user_data.language)
         if tasks:
             tasks = [t for t in tasks if t is not None]
-            internet_info = await asyncio.gather(*tasks)
+            internet_information = await asyncio.gather(*tasks)
+            internet_info = []
+            for t in internet_information:
+                internet_info.append(t["info"])
+                url = t.get("linkedin_url")
+                if url:
+                    print("Put linkedIn url update: ", url)
+                    contact_fields = self.put_linkedin_url_by_id(contact_fields, url, t.get("contact_id"))
+
             internet_info = [t for t in internet_info if t is not None]
             internet_info = "\n\n".join(internet_info)
             contact_fields = await self._fill_forms_with_extra_info(internet_info, contact_fields, user_data.language)
@@ -242,7 +250,8 @@ class VoiceBot:
             # return  commands, user_data
             return None
         personal_info += f"\nLinkedin url: {linked_url}"
-        return personal_info
+        contact_id = user_form["GeneralInformation"]["ContactID"]
+        return {"info": personal_info, "linkedin_url": linked_url, "contact_id": contact_id}
     
     @timing()
     async def fill_internet_company_info(self, user_form: dict, lang = "de-DE"):
@@ -267,7 +276,7 @@ class VoiceBot:
         if not website:
             website = ""
         full_info = personal_info + f"\nWebsite: {website}"+ "\nImprint info: " + str(imprint_info)
-        return full_info
+        return {"info": full_info}
     
     
     @timing()
@@ -299,12 +308,19 @@ class VoiceBot:
                 all_companies.append(company)
                 tasks.append(self.fill_internet_company_info(contact, user_data.language))
             tasks.append(self.fill_internet_personal_info(contact, user_data.language))
-        internet_info = await asyncio.gather(*tasks)
-        internet_info = [t for t in internet_info if t is not None]
+        internet_information = await asyncio.gather(*tasks)
+        contact_fields = self.generate_contacts_ids(contact_fields)
+        internet_info = []
+        for t in internet_information:
+            internet_info.append(t["info"])
+            url = t.get("linkedin_url")
+            if url:
+                print("Put linkedIn url: ", url)
+                contact_fields = self.put_linkedin_url_by_id(contact_fields, url, t.get("contact_id"))
         if internet_info:
             internet_info = "\n\n".join(internet_info)
             contact_fields = await self._fill_forms_with_extra_info(internet_info, contact_fields, user_data.language)
-        contact_fields = self.generate_contacts_ids(contact_fields)
+        
         # print("ENRICHED CONTACTS: ", type(contact_fields), contact_fields)
         user_data.contacts[call_report_id] = contact_fields
         extend_commands.append(gen_general_command(cmd_name, value = contact_fields, val_type = "json", order = order))
@@ -550,4 +566,10 @@ class VoiceBot:
                 final_contacts.append(new)
         return final_contacts
     
-    
+    @staticmethod
+    def put_linkedin_url_by_id(contacts: list, linkedin_url: str, contact_id: str):
+        for contact in contacts:
+            n_id = contact["GeneralInformation"]["ContactID"]
+            if contact_id == n_id:
+                contact["PersonalInformation"]["LinkedinUrl"]
+        return contacts
