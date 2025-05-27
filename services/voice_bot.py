@@ -302,6 +302,8 @@ class VoiceBot:
         # print("Fields BEFORE: ", contact_fields)
         all_companies = []
         tasks = []
+        contact_fields = self.generate_contacts_ids(contact_fields)
+
         for i, contact in enumerate(contact_fields):
             company = contact["BusinessInformation"]["Company"]
             if company not in all_companies:
@@ -309,7 +311,8 @@ class VoiceBot:
                 tasks.append(self.fill_internet_company_info(contact, user_data.language))
             tasks.append(self.fill_internet_personal_info(contact, user_data.language))
         internet_information = await asyncio.gather(*tasks)
-        contact_fields = self.generate_contacts_ids(contact_fields)
+
+        
         internet_info = []
         for t in internet_information:
             internet_info.append(t["info"])
@@ -568,8 +571,18 @@ class VoiceBot:
     
     @staticmethod
     def put_linkedin_url_by_id(contacts: list, linkedin_url: str, contact_id: str):
+        print("CONTACT ID:", contact_id)
         for contact in contacts:
             n_id = contact["GeneralInformation"]["ContactID"]
             if contact_id == n_id:
-                contact["PersonalInformation"]["LinkedinUrl"]
+                print("Contact: ", contact)
+                for k, val in contact.items():
+                    if isinstance(val, dict) and "LinkedinUrl" in val:
+                        print("Section: ", k)
+                        contact[k]["LinkedinUrl"] = linkedin_url
+                    elif "LinkedinUrl" in contact:
+                        contact["LinkedinUrl"] = linkedin_url
+                    else:
+                        print("Didn't find any linked in url")
+                # contact["PersonalInformation"]["LinkedinUrl"]
         return contacts
