@@ -28,6 +28,7 @@ def get_variant_of_fields(full_form_data: dict):
         text += f"{field} - {variations}"
     if text:
         text = "\nCertain fields can have only specific values:\n" + text 
+    text += "\nGender - ['Male', 'Female', 'Divers']"
     formatted_variations = text
     print("Updated Variation  fields:", formatted_variations)
     return text
