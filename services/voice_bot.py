@@ -19,7 +19,7 @@ industry_formated = ""
 
 class VoiceBot:
     def __init__(self, openai_config: dict):
-        self.BEST_MODEL = os.environ.get("search_agent_llm")
+        self.BEST_MODEL = os.environ.get("best_model")
         self.openai_client = OpenAiClient(openai_config)
         self.users_states = {} # report_id to state
         self.ai_agent = SearchAgent()
