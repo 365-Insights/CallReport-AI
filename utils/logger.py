@@ -1,7 +1,6 @@
 
 import logging
 from opencensus.ext.azure.log_exporter import AzureLogHandler
-import os
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,9 +15,10 @@ class PrintToAzureHandler(logging.Handler):
         self.azure_handler.emit(record)
 
 
-# Replace 'your_connection_string' with your actual Azure Application Insights connection string
-instrumentation_key = os.getenv("AZURE_APP_INSIGHTS")
-connection_string=f'{instrumentation_key}'
+# Load Application Insights connection string from Azure Key Vault
+from utils.config import get_config
+config = get_config()
+connection_string = config.get_app_insights_connection_string()
 azure_handler = PrintToAzureHandler(connection_string)
 
 

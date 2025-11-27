@@ -19,14 +19,19 @@ from googlesearch import search
 
 class SearchAgent:
     def __init__(self):
+        from utils.config import get_config
+        config = get_config()
+        ai_config = config.get_ai_agent_config()
+        
         self.project_client = AIProjectClient.from_connection_string(
             credential=DefaultAzureCredential(),
-            conn_str=os.environ["PROJECT_CONNECTION_STRING"],
+            conn_str=ai_config["PROJECT_CONNECTION_STRING"],
         )
+        self.ai_config = ai_config
         self._initialize_agent()
     
     def _initialize_agent(self):
-        self.agent_id = os.environ.get("ai_agent_id")
+        self.agent_id = self.ai_config.get("ai_agent_id")
         print(self.agent_id)
         # if self.agent_id:
         #     try:
@@ -40,12 +45,12 @@ class SearchAgent:
 
     def _create_agent(self):
         print("Creating search agent")
-        bing_connection = self.project_client.connections.get(connection_name=os.environ["BING_CONNECTION_NAME"])
+        bing_connection = self.project_client.connections.get(connection_name=self.ai_config["BING_CONNECTION_NAME"])
         conn_id = bing_connection.id
         print(conn_id)  
         bing = BingGroundingTool(connection_id=conn_id)
         self.agent = self.project_client.agents.create_agent(
-            model=os.environ.get("search_agent_llm"),
+            model=self.ai_config.get("search_agent_llm"),
             name="search-agent-python",
             instructions="You are a helpful assistant",
             tools=bing.definitions,

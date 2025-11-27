@@ -5,18 +5,15 @@ from fastapi import FastAPI, HTTPException, Request
 from dotenv import load_dotenv  
 from pydantic import BaseModel  
 from utils import *
+from utils.config import get_config
 from services import VoiceBot  # Assuming `VoiceBot` is defined in `services.py`  
   
 # Load environment variables  
 load_dotenv()  
   
-# Configuration for OpenAI  
-openai_config = {  
-    "ENDPOINT": os.environ.get("openai_endpoint"),  
-    "API_KEY": os.environ.get("openai_key"),  
-    "MODEL": os.environ.get("llm_model"),  
-    "API_VERSION": os.environ.get("openai_api_version"),  
-}  
+# Load configuration from Azure Key Vault
+config = get_config()
+openai_config = config.get_openai_config()  
   
 # Initialize the VoiceBot instance  
 voice_bot = VoiceBot(openai_config)  

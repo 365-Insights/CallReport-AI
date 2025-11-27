@@ -147,3 +147,8 @@ test.webm
 .vscode
 tests/
 1.py
+SECRETS_DESCRIPTION_EN.txt
+SECRETS_DESCRIPTION.txt
+test_clean.ipynb
+test_server.py
+.vscode/

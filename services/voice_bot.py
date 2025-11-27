@@ -18,8 +18,10 @@ required_fields = ["FirstName", "LastName", "Company", "BusinessEmail"]
 industry_formated = ""
 
 class VoiceBot:
-    def __init__(self, openai_config: dict):
-        self.BEST_MODEL = os.environ.get("best_model")
+    def __init__(self, openai_config: dict, best_model: str = None):
+        from utils.config import get_config
+        config = get_config()
+        self.BEST_MODEL = best_model or config.get_best_model()
         self.openai_client = OpenAiClient(openai_config)
         self.users_states = {} # report_id to state
         self.ai_agent = SearchAgent()
@@ -51,7 +53,6 @@ class VoiceBot:
             )
         commands, user_state, callreportID = main_task.result()
         accompany_text = suggestion_task.result()
-
         commands = validate_commands(commands)
 
         if not self.check_for_voice_command(commands):

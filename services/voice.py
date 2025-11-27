@@ -10,8 +10,13 @@ import azure.cognitiveservices.speech as speechsdk
 
 load_dotenv()
 
-region = os.environ.get('speech_service_region')
-subscription_key = os.environ.get('speech_service_key')
+# Load configuration from Azure Key Vault
+from utils.config import get_config
+config = get_config()
+speech_config = config.get_speech_config()
+
+region = speech_config['region']
+subscription_key = speech_config['subscription_key']
 endpoint_fast = f"https://{region}.api.cognitive.microsoft.com/speechtotext/transcriptions:transcribe?api-version=2024-11-15"
 
 

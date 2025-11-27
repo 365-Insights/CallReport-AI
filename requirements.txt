@@ -5,6 +5,8 @@
 azure-functions
 azure-core
 azure-cognitiveservices-speech
+azure-keyvault-secrets
+azure-identity
 python-dotenv
 openai
 pydub

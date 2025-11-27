@@ -9,16 +9,13 @@ from dotenv import load_dotenv
 
 
 from services import *
+from utils.config import get_config
 
 load_dotenv()
 
-
-openai_config = {
-    "ENDPOINT": os.environ.get("openai_endpoint"),
-    "API_KEY": os.environ.get("openai_key"),
-    "MODEL": os.environ.get("llm_model"),
-    "API_VERSION": os.environ.get("openai_api_version")
-}
+# Load configuration from Azure Key Vault
+config = get_config()
+openai_config = config.get_openai_config()
 
 voice_bot = VoiceBot(openai_config)
 
